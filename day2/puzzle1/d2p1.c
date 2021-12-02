@@ -12,7 +12,7 @@ int main() {
 	int depth = 0;
 	int position = 0;
 	
-	if ((input = fopen("input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}

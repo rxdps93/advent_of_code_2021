@@ -22,7 +22,7 @@ int main() {
 	
 	FILE *input;
 	
-	if ((input = fopen("input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}

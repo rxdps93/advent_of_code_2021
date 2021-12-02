@@ -13,7 +13,7 @@ int main() {
 	int position = 0;
 	int aim = 0;
 	
-	if ((input = fopen("input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
