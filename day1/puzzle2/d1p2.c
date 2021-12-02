@@ -47,17 +47,8 @@ int main() {
 		currentWindow.y = measurements.array[i + 1];
 		currentWindow.z = measurements.array[i + 2];
 
-		printf("%d, %d, %d\t%d",
-			measurements.array[i],
-			measurements.array[i + 1],
-			measurements.array[i + 2],
-			window_sum(&currentWindow));
-
 		if ((window_sum(&currentWindow) > window_sum(&previousWindow)) && window_sum(&previousWindow) > 0) {
 			count++;
-			printf("\tincreased\t%d\n", count);
-		} else {
-			printf("\n");
 		}
 		previousWindow = currentWindow;
 	}
