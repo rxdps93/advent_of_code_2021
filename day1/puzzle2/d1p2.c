@@ -42,23 +42,23 @@ int main() {
 	window_init(&previousWindow);
 
 	int count = 0;
-	for (int i = 0; i < measurements.size - 3; i++) {
+	for (int i = 0; i < measurements.size - 2; i++) {
 		currentWindow.x = measurements.array[i];
 		currentWindow.y = measurements.array[i + 1];
 		currentWindow.z = measurements.array[i + 2];
 
-		printf("%d, %d, %d\t%d\n",
+		printf("%d, %d, %d\t%d",
 			measurements.array[i],
 			measurements.array[i + 1],
 			measurements.array[i + 2],
 			window_sum(&currentWindow));
 
-		break;
-
-		if ((window_sum(&currentWindow) > window_sum(&previousWindow))) {
+		if ((window_sum(&currentWindow) > window_sum(&previousWindow)) && window_sum(&previousWindow) > 0) {
 			count++;
+			printf("\tincreased\t%d\n", count);
+		} else {
+			printf("\n");
 		}
-		printf("prev:\t%d\t|\tcurr:\t%d\n", window_sum(&previousWindow), window_sum(&currentWindow));
 		previousWindow = currentWindow;
 	}
 
