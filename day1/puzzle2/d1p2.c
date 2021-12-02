@@ -42,7 +42,7 @@ int main() {
 	window_init(&previousWindow);
 
 	int count = 0;
-	for (int i = 0; i < measurements.size - 2; i++) {
+	for (unsigned long i = 0; i < measurements.size - 2; i++) {
 		currentWindow.x = measurements.array[i];
 		currentWindow.y = measurements.array[i + 1];
 		currentWindow.z = measurements.array[i + 2];
