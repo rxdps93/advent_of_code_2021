@@ -62,10 +62,6 @@ int main() {
 		}
 	}
 
-	for (int i = 0; i < BIN_LEN; i++) {
-		printf("%d", gamma_bin[i]);
-	} printf("\n");
-
 	int gamma = bintoi(gamma_bin);
 	int epsilon = bintoi(epsilon_bin);
 	printf("Gamma Value:\t%d\nEpsilon Value:\t%d\nConsumption:\t%d\n", gamma, epsilon, gamma * epsilon);
