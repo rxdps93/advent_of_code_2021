@@ -10,11 +10,11 @@ I'm doing it in C.
 - [x] Day 2
   - [x] puzzle 1
   - [x] puzzle 2
-- [ ] Day 3
-  - [ ] puzzle 1
-  - [ ] puzzle 2
+- [x] Day 3
+  - [x] puzzle 1
+  - [x] puzzle 2
 - [ ] Day 4
-  - [ ] puzzle 1
+  - [x] puzzle 1
   - [ ] puzzle 2
 - [ ] Day 5
   - [ ] puzzle 1
