@@ -3,22 +3,19 @@
 
 #define ARR_SIZE 1024
 
-void print_coords(int coords[ARR_SIZE][ARR_SIZE]) {
-	for (int row = 0; row < ARR_SIZE; row++) {
-		for (int col = 0; col < ARR_SIZE; col++) {
-			printf("%d ", coords[col][row]);
-		}
-		printf("\n");
-	}
-}
-
-int count_coords(int coords[ARR_SIZE][ARR_SIZE]) {
+int count_coords(int coords[ARR_SIZE][ARR_SIZE], int prnt) {
 	int count = 0;
 	for (int row = 0; row < ARR_SIZE; row++) {
 		for (int col = 0; col < ARR_SIZE; col++) {
+			if (prnt) {
+				printf("%d ", coords[col][row]);
+			}
 			if (coords[col][row] > 1) {
 				count++;
 			}
+		}
+		if (prnt) {
+			printf("\n");
 		}
 	}
 	return count;
@@ -51,7 +48,7 @@ void mark_coords(int x1, int y1, int x2, int y2, int coords[ARR_SIZE][ARR_SIZE])
 			}
 		}
 	} else {
-		printf("Skipping non-linear pairs: (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
+		printf("Skipping diagonal pairs: (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
 	}
 }
 
@@ -74,7 +71,8 @@ int main() {
 		mark_coords(x1, y1, x2, y2, coords);
 	}
 
-	printf("Count: %d\n", count_coords(coords));
+	printf("FINAL COORDS:\n");
+	printf("Count: %d\n", count_coords(coords, 0));
 
 	fclose(input);
 	return EXIT_SUCCESS;
