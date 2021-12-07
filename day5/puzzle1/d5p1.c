@@ -1,19 +1,54 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define ARR_SIZE 10
+#define ARR_SIZE 1024
+
+void print_coords(int coords[ARR_SIZE][ARR_SIZE]) {
+	for (int row = 0; row < ARR_SIZE; row++) {
+		for (int col = 0; col < ARR_SIZE; col++) {
+			printf("%d ", coords[col][row]);
+		}
+		printf("\n");
+	}
+}
+
+int count_coords(int coords[ARR_SIZE][ARR_SIZE]) {
+	int count = 0;
+	for (int row = 0; row < ARR_SIZE; row++) {
+		for (int col = 0; col < ARR_SIZE; col++) {
+			if (coords[col][row] > 1) {
+				count++;
+			}
+		}
+	}
+	return count;
+}
 
 void mark_coords(int x1, int y1, int x2, int y2, int coords[ARR_SIZE][ARR_SIZE]) {
 
 	if (x1 == x2) {
 		printf("Processing vertical pairs: (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
-		for (int i = y1; i <= y2; i++) {
-			coords[x1][i]++;
+
+		if (y1 < y2) {
+			for (int i = y1; i <= y2; i++) {
+				coords[x1][i]++;
+			}
+		} else {
+			for (int i = y1; i >= y2; i--) {
+				coords[x1][i]++;
+			}
 		}
 	} else if (y1 == y2) {
 		printf("Processing horizontal pairs: (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
-		for (int i = x1; i <= x2; i++) {
-			coords[i][y1]++;
+
+		if (x1 < x2) {
+			for (int i = x1; i <= x2; i++) {
+				coords[i][y1]++;
+			}
+		} else {
+			for (int i = x1; i >= x2; i--) {
+				coords[i][y1]++;
+			}
 		}
 	} else {
 		printf("Skipping non-linear pairs: (%d, %d) -> (%d, %d)\n", x1, y1, x2, y2);
@@ -24,7 +59,7 @@ int main() {
 
 	FILE *input;
 	
-	if ((input = fopen("../test_input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
@@ -39,12 +74,7 @@ int main() {
 		mark_coords(x1, y1, x2, y2, coords);
 	}
 
-	for (int row = 0; row < ARR_SIZE; row++) {
-		for (int col = 0; col < ARR_SIZE; col++) {
-			printf("%d ", coords[col][row]);
-		}
-		printf("\n");
-	}
+	printf("Count: %d\n", count_coords(coords));
 
 	fclose(input);
 	return EXIT_SUCCESS;
