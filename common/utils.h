@@ -29,6 +29,18 @@ void insert_IntArray(IntArray *a, int element) {
 	a->array[a->used++] = element;
 }
 
+void mul_insert_IntArray(IntArray *a, int element, size_t mul_factor) {
+		if (a->used == a->size) {
+		a->size *= mul_factor;
+		int *temp = realloc(a->array, a->size * sizeof(int));
+		if (!temp) {
+			exit(EXIT_FAILURE);
+		}
+		a->array = temp;
+	}
+	a->array[a->used++] = element;
+}
+
 void free_IntArray(IntArray *a) {
 	free(a->array);
 	a->array = NULL;

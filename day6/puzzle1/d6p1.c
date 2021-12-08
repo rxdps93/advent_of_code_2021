@@ -38,7 +38,7 @@ int main() {
 		cycle_school(&fish_school);
 	}
 
-	printf("After %d days there are %zu lanternfish in the school.\n", NUM_DAYS, fish_school.size);
+	printf("After %d days there are %zu lanternfish in the school.\n", NUM_DAYS, fish_school.used);
 	free_IntArray(&fish_school);
 	fclose(input);
 	return EXIT_SUCCESS;
