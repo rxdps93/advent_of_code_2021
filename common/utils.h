@@ -46,3 +46,7 @@ void free_IntArray(IntArray *a) {
 	a->array = NULL;
 	a->used = a->size = 0;
 }
+
+int ctoi(char c) {
+	return (int)(c - '0');
+}

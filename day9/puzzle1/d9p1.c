@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include "../../common/utils.h"
 
 #define LINE_SIZE 100
 
@@ -10,10 +11,6 @@ struct HeightRating {
 	int height;
 	bool is_low_point;
 };
-
-int ctoi(char c) {
-	return c - '0';
-}
 
 int main() {
 

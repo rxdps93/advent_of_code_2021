@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../../common/utils.h"
 
 #define BIN_LEN 12
-
-int ctoi(char c) {
-	return (int)c - '0';
-}
 
 int bintoi(int *binstr) {
 	int dec = 0;
