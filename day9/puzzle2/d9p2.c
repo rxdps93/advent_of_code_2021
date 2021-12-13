@@ -19,18 +19,17 @@ struct HeightRating {
 };
 
 typedef struct {
-	HeightRating *items;
+	HeightRating *items[1024];
 	int size;
 	int front_ptr;
 	int rear_ptr;
 } Queue;
 
+int comp_int_desc(const void *a, const void *b) {
+	return *(int*)b - *(int*)a;
+}
+
 void initialize_queue(Queue *queue, int qsize) {
-	HeightRating *temp = malloc(qsize * sizeof(HeightRating));
-	if (!temp) {
-		exit(EXIT_FAILURE);
-	}
-	queue->items = temp;
 	queue->size = qsize;
 	queue->front_ptr = -1;
 	queue->rear_ptr = -1;
@@ -44,7 +43,7 @@ int is_empty(Queue *queue) {
 	return queue->rear_ptr == -1;
 }
 
-void enqueue(Queue *queue, HeightRating item) {
+void enqueue(Queue *queue, HeightRating *item) {
 
 	if (is_full(queue)) {
 		printf("Enqueue aborted; queue is full.\n");
@@ -55,7 +54,7 @@ void enqueue(Queue *queue, HeightRating item) {
 
 		queue->rear_ptr++;
 		queue->items[queue->rear_ptr] = item;
-		printf("Added: %d\n", queue->items[queue->rear_ptr].height);
+		printf("Added: %d\n", queue->items[queue->rear_ptr]->height);
 	}
 }
 
@@ -66,7 +65,7 @@ HeightRating *dequeue(Queue *queue) {
 		printf("Dequeue aborted; queue is full.\n");
 		item = NULL;
 	} else {
-		item = &queue->items[queue->front_ptr];
+		item = queue->items[queue->front_ptr];
 		queue->front_ptr++;
 		
 		if (queue->front_ptr > queue->rear_ptr) {
@@ -85,9 +84,36 @@ void print_queue(Queue *queue) {
 	} else {
 		printf("queue (f=%d, r=%d): ", queue->front_ptr, queue->rear_ptr + 1);
 		for (int i = queue->front_ptr; i < queue->rear_ptr + 1; i++) {
-			printf("[%d] ", queue->items[i].height);
+			printf("[%d] ", queue->items[i]->height);
 		}
 		printf("\n");
+	}
+}
+
+void build_graph(HeightRating ratings[LINE_SIZE][LINE_SIZE], int row_ptr) {
+
+	for (int row = 0; row < row_ptr; row++) {
+		for (int col = 0; col < LINE_SIZE; col++) {
+			// Assign up
+			if (row != 0) {
+				ratings[row][col].up = &ratings[row - 1][col];
+			}
+
+			// Assign down
+			if (row < row_ptr - 1) {
+				ratings[row][col].down = &ratings[row + 1][col];
+			}
+
+			// Assign left
+			if (col != 0) {
+				ratings[row][col].left = &ratings[row][col - 1];
+			}
+
+			// Assign right
+			if (col < LINE_SIZE - 1) {
+				ratings[row][col].right = &ratings[row][col + 1];
+			}
+		}
 	}
 }
 
@@ -100,25 +126,21 @@ int find_low_points(HeightRating ratings[LINE_SIZE][LINE_SIZE], int row_ptr) {
 			// Check up
 			if (row != 0) {
 				ratings[row][col].is_low_point = ratings[row][col].height < ratings[row - 1][col].height;
-				ratings[row][col].up = &ratings[row - 1][col];
 			}
 
 			// Check down
 			if (ratings[row][col].is_low_point && row < row_ptr - 1) {
 				ratings[row][col].is_low_point = ratings[row][col].height < ratings[row + 1][col].height;
-				ratings[row][col].down = &ratings[row + 1][col];
 			}
 
 			// Check left
 			if (ratings[row][col].is_low_point && col != 0) {
 				ratings[row][col].is_low_point = ratings[row][col].height < ratings[row][col - 1].height;
-				ratings[row][col].left = &ratings[row][col - 1];
 			}
 
 			// Check right
 			if (ratings[row][col].is_low_point && col < LINE_SIZE - 1) {
 				ratings[row][col].is_low_point = ratings[row][col].height < ratings[row][col + 1].height;
-				ratings[row][col].right = &ratings[row][col + 1];
 			}
 
 			if (ratings[row][col].is_low_point) {
@@ -130,9 +152,9 @@ int find_low_points(HeightRating ratings[LINE_SIZE][LINE_SIZE], int row_ptr) {
 	return low_point_count;
 }
 
-int map_basin(HeightRating node, int queue_size) {
+int map_basin(HeightRating *node, int queue_size) {
 
-	int size = 1;
+	int size = 0;
 	Queue queue;
 	initialize_queue(&queue, queue_size);
 	enqueue(&queue, node);
@@ -140,16 +162,21 @@ int map_basin(HeightRating node, int queue_size) {
 	while (!is_empty(&queue)) {
 		print_queue(&queue);
 
-		HeightRating current_node = *dequeue(&queue);
-		printf("Visited %d\n", current_node.height);
-		if (current_node.height != 9 && !current_node.is_mapped) {
-			current_node.is_mapped = true;
+		HeightRating *current_node = dequeue(&queue);
+		printf("Visited %d\n", current_node->height);
+		printf("is_mapped: %d\n", current_node->is_mapped);
+		if (current_node->height != 9 && !current_node->is_mapped) {
+			printf("marked %d as mapped!\n", current_node->height);
+			current_node->is_mapped = true;
 			size++;
 		}
 
-		if (current_node.up) {
-			if (!current_node.up->is_mapped && current_node.up->height != 9) {
-				enqueue(&queue, *current_node.up);
+		printf("is_mapped: %d\n", current_node->is_mapped);
+
+		if (current_node->up) {
+			printf("adjecent up: %d, mapped: %d\n", current_node->up->height, current_node->up->is_mapped);
+			if (!current_node->up->is_mapped && current_node->up->height != 9) {
+				enqueue(&queue, current_node->up);
 			} else {
 				printf("up not valid!\n");
 			}
@@ -157,9 +184,10 @@ int map_basin(HeightRating node, int queue_size) {
 			printf("up doesn't exist!\n");
 		}
 
-		if (current_node.down) {
-			if (!current_node.down->is_mapped && current_node.down->height != 9) {
-				enqueue(&queue, *current_node.down);
+		if (current_node->down) {
+			printf("adjecent down: %d, mapped: %d\n", current_node->down->height, current_node->down->is_mapped);
+			if (!current_node->down->is_mapped && current_node->down->height != 9) {
+				enqueue(&queue, current_node->down);
 			} else {
 				printf("down not valid!\n");
 			}
@@ -167,9 +195,10 @@ int map_basin(HeightRating node, int queue_size) {
 			printf("down doesn't exist!\n");
 		}
 
-		if (current_node.left) {
-			if (!current_node.left->is_mapped && current_node.left->height != 9) {
-				enqueue(&queue, *current_node.left);
+		if (current_node->left) {
+			printf("adjecent left: %d, mapped: %d\n", current_node->left->height, current_node->left->is_mapped);
+			if (!current_node->left->is_mapped && current_node->left->height != 9) {
+				enqueue(&queue, current_node->left);
 			} else {
 				printf("left not valid!\n");
 			}
@@ -177,19 +206,16 @@ int map_basin(HeightRating node, int queue_size) {
 			printf("left doesn't exist!\n");
 		}
 
-		if (current_node.right) {
-			if (!current_node.right->is_mapped && current_node.right->height != 9) {
-				enqueue(&queue, *current_node.right);
+		if (current_node->right) {
+			printf("adjecent right: %d, mapped: %d\n", current_node->right->height, current_node->right->is_mapped);
+			if (!current_node->right->is_mapped && current_node->right->height != 9) {
+				enqueue(&queue, current_node->right);
 			} else {
 				printf("right not valid!\n");
 			}
 		} else {
 			printf("right doesn't exist!\n");
 		}
-
-		print_queue(&queue);
-		printf("holding...press enter to go on\n");
-		getchar();
 	}
 
 	printf("basin mapped; size = %d\n", size);
@@ -229,14 +255,19 @@ int main() {
 	}
 
 	int basin_sizes[find_low_points(ratings, row_ptr)];
+	build_graph(ratings, row_ptr);
 	int basin = 0;
 	for (int row = 0; row < row_ptr; row++) {
 		for (int col = 0; col < LINE_SIZE; col++) {
 			if (ratings[row][col].is_low_point) {
-				basin_sizes[basin++] = map_basin(ratings[row][col], LINE_SIZE * row_ptr);
+				basin_sizes[basin++] = map_basin(&ratings[row][col], LINE_SIZE * row_ptr);
 			}
 		}
 	}
+
+	qsort(basin_sizes, basin, sizeof(int), comp_int_desc);
+
+	printf("The answer is: %lu\n", (long)basin_sizes[0] * (long)basin_sizes[1] * (long)basin_sizes[2]);
 
 	fclose(input);
 	return EXIT_SUCCESS;
