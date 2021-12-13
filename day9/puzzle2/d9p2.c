@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "../../common/utils.h"
 
-#define LINE_SIZE 10
+#define LINE_SIZE 100
 
 typedef struct HeightRating HeightRating;
 
@@ -19,7 +19,7 @@ struct HeightRating {
 };
 
 typedef struct {
-	HeightRating *items[1024];
+	HeightRating *items[LINE_SIZE * LINE_SIZE];
 	int size;
 	int front_ptr;
 	int rear_ptr;
@@ -54,7 +54,6 @@ void enqueue(Queue *queue, HeightRating *item) {
 
 		queue->rear_ptr++;
 		queue->items[queue->rear_ptr] = item;
-		printf("Added: %d\n", queue->items[queue->rear_ptr]->height);
 	}
 }
 
@@ -160,65 +159,37 @@ int map_basin(HeightRating *node, int queue_size) {
 	enqueue(&queue, node);
 
 	while (!is_empty(&queue)) {
-		print_queue(&queue);
 
 		HeightRating *current_node = dequeue(&queue);
-		printf("Visited %d\n", current_node->height);
-		printf("is_mapped: %d\n", current_node->is_mapped);
 		if (current_node->height != 9 && !current_node->is_mapped) {
-			printf("marked %d as mapped!\n", current_node->height);
-			current_node->is_mapped = true;
 			size++;
 		}
-
-		printf("is_mapped: %d\n", current_node->is_mapped);
+		current_node->is_mapped = true;
 
 		if (current_node->up) {
-			printf("adjecent up: %d, mapped: %d\n", current_node->up->height, current_node->up->is_mapped);
 			if (!current_node->up->is_mapped && current_node->up->height != 9) {
 				enqueue(&queue, current_node->up);
-			} else {
-				printf("up not valid!\n");
 			}
-		} else {
-			printf("up doesn't exist!\n");
 		}
 
 		if (current_node->down) {
-			printf("adjecent down: %d, mapped: %d\n", current_node->down->height, current_node->down->is_mapped);
 			if (!current_node->down->is_mapped && current_node->down->height != 9) {
 				enqueue(&queue, current_node->down);
-			} else {
-				printf("down not valid!\n");
 			}
-		} else {
-			printf("down doesn't exist!\n");
 		}
 
 		if (current_node->left) {
-			printf("adjecent left: %d, mapped: %d\n", current_node->left->height, current_node->left->is_mapped);
 			if (!current_node->left->is_mapped && current_node->left->height != 9) {
 				enqueue(&queue, current_node->left);
-			} else {
-				printf("left not valid!\n");
 			}
-		} else {
-			printf("left doesn't exist!\n");
 		}
 
 		if (current_node->right) {
-			printf("adjecent right: %d, mapped: %d\n", current_node->right->height, current_node->right->is_mapped);
 			if (!current_node->right->is_mapped && current_node->right->height != 9) {
 				enqueue(&queue, current_node->right);
-			} else {
-				printf("right not valid!\n");
 			}
-		} else {
-			printf("right doesn't exist!\n");
 		}
 	}
-
-	printf("basin mapped; size = %d\n", size);
 
 	return size;
 }
@@ -227,7 +198,7 @@ int main() {
 
 	FILE *input;
 	
-	if ((input = fopen("../test_input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
@@ -267,8 +238,8 @@ int main() {
 
 	qsort(basin_sizes, basin, sizeof(int), comp_int_desc);
 
+	printf("Three largest basins: %d, %d, %d\n", basin_sizes[0], basin_sizes[1], basin_sizes[2]);
 	printf("The answer is: %lu\n", (long)basin_sizes[0] * (long)basin_sizes[1] * (long)basin_sizes[2]);
-
 	fclose(input);
 	return EXIT_SUCCESS;
 }
