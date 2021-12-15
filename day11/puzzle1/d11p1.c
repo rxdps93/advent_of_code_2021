@@ -39,7 +39,7 @@ void map_octopuses(Octopus octopuses[SIZE][SIZE]) {
 		for (int col = 0; col < SIZE; col++) {
 			// Up Left
 			if (row != 0 && col != 0) {
-				octopuses[row][col].adjacent[0] = octopuses[row - 1][col - 1];
+				octopuses[row][col].adjacent[0] = &octopuses[row - 1][col - 1];
 			} else {
 				octopuses[row][col].adjacent[0] = NULL;
 			}
