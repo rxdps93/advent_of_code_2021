@@ -60,8 +60,12 @@ char peek(Stack *stack) {
 	}
 }
 
-int comp_long(const void *a, const void *b) {
-	return *(long*)a - *(long*)b;
+int comp_long_long(const void *a, const void *b) {
+    if( *(long long*)a - *(long long*)b < 0 )
+        return -1;
+    if( *(long long*)a - *(long long*)b > 0 )
+        return 1;
+    return 0;
 }
 
 int is_open(char c) {
@@ -117,8 +121,8 @@ int syntax_score(char c) {
 	return score;
 }
 
-long complete_score(char c) {
-	long score;
+long long complete_score(char c) {
+	long long score;
 	switch(c) {
 		case CLOSE_PRTH:
 			score = 1;
@@ -171,9 +175,9 @@ char get_opposite(char c) {
 	return opposite;
 }
 
-long generate_completion_string(Stack *stack) {
+long long generate_completion_string(Stack *stack) {
 
-	long score = 0;
+	long long score = 0;
 	char c;
 	do {
 		c = pop(stack);
@@ -181,13 +185,12 @@ long generate_completion_string(Stack *stack) {
 		if (c == EOF) {
 			break;
 		} else {
-
 			score *= 5;
 			score += complete_score(get_opposite(c));
 		}
 
 	} while (1);
-
+	
 	return score;
 }
 
@@ -205,7 +208,7 @@ int main() {
 	char c;
 	int score_corrupted = 0;
 	int corrupted = 0;
-	long score_incomplete[1024];
+	long long score_incomplete[1024] = { 0 };
 	int score_index = 0;
 	while (fscanf(input, "%c", &c) == 1) {
 		if (!corrupted) {
@@ -236,14 +239,9 @@ int main() {
 		}
 	}
 
-	qsort(score_incomplete, score_index, sizeof(long), comp_long);
-
-	for (int i = 0; i < score_index; i++) {
-		printf("Score: %ld\n", score_incomplete[i]);
-	}
-
+	qsort(score_incomplete, score_index, sizeof(long long), comp_long_long);
 	printf("Corrupted Score:  %d\n", score_corrupted);
-	printf("Incomplete Score: %ld\n", score_incomplete[(score_index - 1) / 2]);
+	printf("Incomplete Score: %lld\n", score_incomplete[(score_index - 1) / 2]);
 	fclose(input);
 	return EXIT_SUCCESS;
 }
