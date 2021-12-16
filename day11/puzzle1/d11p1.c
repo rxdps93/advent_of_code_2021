@@ -3,7 +3,7 @@
 #include "../../common/utils.h"
 
 #define SIZE	10
-#define STEPS	10
+#define STEPS	100
 #define ADJ		8
 
 typedef struct Octopus Octopus;
@@ -25,13 +25,11 @@ void print_octopuses(Octopus octopuses[SIZE][SIZE]) {
 
 void octopus_flash(Octopus *octopus, int *flashes) {
 
-	octopus->power_level = 0;
+	// octopus->power_level = 0;
 	*flashes += 1;
 	for (int i = 0; i < ADJ; i++) {
 		if (octopus->adjacent[i]) {
-			if (octopus->adjacent[i]->power_level != 0) {
-				octopus->adjacent[i]->power_level++;
-			}
+			octopus->adjacent[i]->power_level++;
 
 			if (octopus->adjacent[i]->power_level == 10) {
 				octopus_flash(octopus->adjacent[i], flashes);
@@ -44,9 +42,7 @@ void increase_power_level(Octopus octopuses[SIZE][SIZE], int *flashes) {
 	for (int row = 0; row < SIZE; row++) {
 		for (int col = 0; col < SIZE; col++) {
 
-			if (octopuses[row][col].power_level != 0) {
-				octopuses[row][col].power_level++;
-			}
+			octopuses[row][col].power_level++;
 
 			if (octopuses[row][col].power_level == 10) {
 				octopus_flash(&octopuses[row][col], flashes);
@@ -129,7 +125,7 @@ int main() {
 
 	FILE *input;
 	
-	if ((input = fopen("../test_input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
