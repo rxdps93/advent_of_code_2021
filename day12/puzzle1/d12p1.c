@@ -7,7 +7,7 @@
 #define SIZE 1024
 
 typedef struct Cave Cave;
-typedef struct Stack Stack;
+typedef struct Queue Queue;
 
 struct Cave {
 	char id[ID_LEN];
@@ -17,45 +17,64 @@ struct Cave {
 	Cave *adj[SIZE];
 };
 
-struct Stack {
-	int top;
+struct Queue {
+	int front_ptr;
+	int rear_ptr;
 	size_t capacity;
 	Cave **items;
 };
 
-void init_stack(Stack *stack, size_t capacity) {
-	stack->top = -1;
-	stack->capacity = capacity;
-	stack->items = malloc(capacity * sizeof(Cave*));
+void init_queue(Queue *q, size_t capacity) {
+	q->capacity = capacity;
+	q->front_ptr = -1;
+	q->rear_ptr = -1;
+	q->items = malloc(capacity * sizeof(Cave*));
 }
 
-bool is_stack_full(Stack *stack) {
-	return stack->top == (int)(stack->capacity - 1);
+bool is_queue_full(Queue *q) {
+	return q->rear_ptr == (int)(q->capacity - 1);
 }
 
-bool is_stack_empty(Stack *stack) {
-	return stack->top == -1;
+bool is_queue_empty(Queue *q) {
+	return q->front_ptr == -1;
 }
 
-void push(Stack *stack, Cave *item) {
-	if (!is_stack_full(stack)) {
-		stack->items[++stack->top] = item;
+void enqueue(Queue *q, Cave *item) {
+	if (is_queue_full(q)) {
+		printf("Enqueue aborted; queue is full.\n");
+	} else {
+		if (q->front_ptr == -1) {
+			q->front_ptr = 0;
+		}
+
+		q->rear_ptr++;
+		q->items[q->rear_ptr] = item;
 	}
 }
 
-Cave *pop(Stack *stack) {
-	if (is_stack_empty(stack)) {
-		return NULL;
+Cave *dequeue(Queue *q) {
+	Cave *item;
+	if (is_queue_empty(q)) {
+		printf("Dequeue aborted; queue is full.\n");
+		item = NULL;
 	} else {
-		return stack->items[stack->top--];
+		item = q->items[q->front_ptr];
+		q->front_ptr++;
+		
+		if (q->front_ptr > q->rear_ptr) {
+			q->front_ptr = -1;
+			q->rear_ptr = -1;
+		}
 	}
+
+	return item;
 }
 
-Cave *peek(Stack *stack) {
-	if (is_stack_empty(stack)) {
+Cave *queue_peek(Queue *q) {
+	if (is_queue_empty(q)) {
 		return NULL;
 	} else {
-		return stack->items[stack->top];
+		return q->items[q->front_ptr];
 	}
 }
 
@@ -88,6 +107,14 @@ void add_connection(Cave *caves, char id_a[ID_LEN], char id_b[ID_LEN], int cave_
 	a->adj[a->adj_count++] = b;
 	b->adj[b->adj_count++] = a;
 	printf("Connections added between %s and %s.\n", id_a, id_b);
+}
+
+int path_search(Cave *start, Cave *end, Queue *q) {
+	Queue path;
+	path = init_queue(&path, q->capacity);
+
+	enqueue(&path, start);
+	
 }
 
 int main() {
@@ -147,8 +174,9 @@ int main() {
 
 	caves = realloc(caves, cave_count * sizeof(Cave));
 
-	Stack stack;
-	init_stack(&stack, cave_count);
+	Queue queue;
+	init_queue(&queue, cave_count);
+	path_search(&start, &end, &queue);
 
 	// for (int i = 0; i < cave_count; i++) {
 	// 	printf("Cave %s which connects to: ", caves[i].id);
