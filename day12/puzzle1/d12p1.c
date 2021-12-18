@@ -27,6 +27,7 @@ struct Path {
 struct Queue {
 	int front_ptr;
 	int rear_ptr;
+	int size;
 	size_t capacity;
 	Path **items;
 };
@@ -34,6 +35,7 @@ struct Queue {
 void init_queue(Queue *q, size_t capacity) {
 	q->items = malloc(capacity * sizeof(Path *));
 	q->capacity = capacity;
+	q->size = 0;
 	q->front_ptr = -1;
 	q->rear_ptr = -1;
 }
@@ -44,32 +46,40 @@ void init_path(Path *p, size_t capacity) {
 	p->capacity = capacity;
 }
 
-bool is_queue_full(Queue *q) {
+bool queue_is_full(Queue *q) {
 	return q->rear_ptr == (int)(q->capacity - 1);
 }
 
-bool is_queue_empty(Queue *q) {
+bool queue_is_empty(Queue *q) {
 	return q->front_ptr == -1;
 }
 
-void add_to_path(Path *p, Cave *c) {
+void path_add(Path *p, Cave *c) {
 
-	if (p->path_size == p->capacity) {
+	if (p->path_size == (int)p->capacity) {
 		p->capacity *= 2;
 		p->path = realloc(p->path, p->capacity * sizeof(Cave *));
 	}
 	p->path[p->path_size++] = c;
+	// printf("Added a cave to the path: %s\n", c->id);
 }
 
-Cave *get_last(Path *p) {
+Cave *path_get_last(Path *p) {
 	if (p->path_size == 0) {
 		return NULL;
 	}
 	return p->path[p->path_size - 1];
 }
 
+void print_path(Path *path) {
+	for (int i = 0; i < path->path_size; i++) {
+		printf("%s,", path->path[i]->id);
+	}
+	printf("\n");
+}
+
 void enqueue(Queue *q, Path *item) {
-	if (is_queue_full(q)) {
+	if (queue_is_full(q)) {
 		printf("Enqueue aborted; queue is full.\n");
 	} else {
 		if (q->front_ptr == -1) {
@@ -78,17 +88,21 @@ void enqueue(Queue *q, Path *item) {
 
 		q->rear_ptr++;
 		q->items[q->rear_ptr] = item;
+		q->size++;
+		// printf("Added a path to the queue: ");
+		// print_path(item);
 	}
 }
 
 Path *dequeue(Queue *q) {
 	Path *item;
-	if (is_queue_empty(q)) {
+	if (queue_is_empty(q)) {
 		printf("Dequeue aborted; queue is full.\n");
 		item = NULL;
 	} else {
 		item = q->items[q->front_ptr];
 		q->front_ptr++;
+		q->size--;
 		
 		if (q->front_ptr > q->rear_ptr) {
 			q->front_ptr = -1;
@@ -100,15 +114,34 @@ Path *dequeue(Queue *q) {
 }
 
 Path *queue_peek(Queue *q) {
-	if (is_queue_empty(q)) {
+	if (queue_is_empty(q)) {
 		return NULL;
 	} else {
 		return q->items[q->front_ptr];
 	}
 }
 
+bool path_contains(Path *path, Cave *cave) {
+
+	if (!cave->is_big_cave) {
+		for (int i = 0; i < path->path_size; i++) {
+			if (strcmp(path->path[i]->id, cave->id) == 0) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void path_copy(Path *old_path, Path *new_path) {
+	memcpy(new_path->path, old_path->path, sizeof old_path->path);
+	new_path->capacity = old_path->capacity;
+	// new_path->path_size
+}
+
 int cave_type(char id[ID_LEN]) {
-	return ((id[0] >= 'a') && (id[0] <= 'z'));
+	return !((id[0] >= 'a') && (id[0] <= 'z'));
 }
 
 int contains(Cave *caves, char id[ID_LEN], int cave_count) {
@@ -135,7 +168,7 @@ void add_connection(Cave *caves, char id_a[ID_LEN], char id_b[ID_LEN], int cave_
 
 	a->adj[a->adj_count++] = b;
 	b->adj[b->adj_count++] = a;
-	printf("Connections added between %s and %s.\n", id_a, id_b);
+	// printf("Connections added between %s and %s. %s total connections: %d\n", id_a, id_b, id_a, a->adj_count);
 }
 
 void reset_cave(Cave *caves, int size) {
@@ -144,22 +177,55 @@ void reset_cave(Cave *caves, int size) {
 	}
 }
 
-void print_path(Path *path) {
-	for (int i = 0; i < path->path_size; i++) {
-		printf("%s,", path->path[i]->id);
+void print_queue(Queue *queue) {
+
+	printf("START QUEUE (%d, %d, size: %d)\n", queue->front_ptr, queue->rear_ptr, queue->size);
+
+	print_path(queue_peek(queue));
+
+	for (int i = queue->front_ptr; i < queue->rear_ptr; i++) {
+		print_path(queue->items[i]);
 	}
-	printf("\n");
+
+	printf("END QUEUE\n");
 }
 
-int path_search(Cave *graph, Cave *start, Cave *end, int size) {
+int path_search(Cave *start, Cave *end, int size) {
 	
-	Path *path;
-	init_path(path, size);
+	Queue queue;
+	init_queue(&queue, 50000);
 
+	Path path;
+	init_path(&path, size);
 
+	path_add(&path, start);
+	enqueue(&queue, &path);
 
+	Cave *cave;
+	int path_count = 0;
+	while(!queue_is_empty(&queue)) {
+		print_queue(&queue);
+		path = *dequeue(&queue);
+		cave = path_get_last(&path);
 
-	return 0;
+		if (strcmp(cave->id, end->id) == 0) {
+			printf("Reached the end: ");
+			print_path(&path);
+			printf("\n\n");
+			path_count++;
+			// path = *dequeue(&queue);
+		}
+
+		for (int i = 0; i < cave->adj_count; i++) {
+			if (!path_contains(&path, cave->adj[i])) {
+				Path new_path = path;
+				path_add(&new_path, cave->adj[i]);
+				enqueue(&queue, &new_path);
+			}
+		}
+	}
+
+	return path_count;
 }
 
 int main() {
@@ -195,7 +261,7 @@ int main() {
 				end = cave;
 			}
 
-			printf("Added new %s cave %s.\n", cave.is_big_cave ? "big" : "small", cave.id);
+			// printf("Added new %s cave %s.\n", cave.is_big_cave ? "big" : "small", cave.id);
 		}
 
 		if (!contains(caves, second_id, cave_count)) {
@@ -205,13 +271,7 @@ int main() {
 			cave.adj_count = 0;
 			caves[cave_count++] = cave;
 
-			if (strcmp(cave.id, "start") == 0) {
-				start = cave;
-			} else if (strcmp(cave.id, "end") == 0) {
-				end = cave;
-			}
-
-			printf("Added new %s cave %s.\n", cave.is_big_cave ? "big" : "small", cave.id);
+			// printf("Added new %s cave %s.\n", cave.is_big_cave ? "big" : "small", cave.id);
 		}
 
 		add_connection(caves, first_id, second_id, cave_count);
@@ -219,11 +279,19 @@ int main() {
 
 	caves = realloc(caves, cave_count * sizeof(Cave));
 
-	int num_paths = path_search(caves, &start, &end, cave_count);
+	for (int i = 0; i < cave_count; i++) {
+		if (strcmp(caves[i].id, "start") == 0) {
+			start = caves[i];
+		} else if (strcmp(caves[i].id, "end") == 0) {
+			end = caves[i];
+		}
+	}
+
+	int num_paths = path_search(&start, &end, cave_count);
 	printf("There are %d paths\n", num_paths);
 
 	// for (int i = 0; i < cave_count; i++) {
-	// 	printf("Cave %s which connects to: ", caves[i].id);
+	// 	printf("Cave %s which connects to %d caves: ", caves[i].id, caves[i].adj_count);
 	// 	for (int adj = 0; adj < caves[i].adj_count; adj++) {
 	// 		printf("%s ", caves[i].adj[adj]->id);
 	// 	}
