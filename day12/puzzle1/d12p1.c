@@ -29,11 +29,11 @@ struct Queue {
 	int rear_ptr;
 	int size;
 	size_t capacity;
-	Path **items;
+	Path *items;
 };
 
 void init_queue(Queue *q, size_t capacity) {
-	q->items = malloc(capacity * sizeof(Path *));
+	q->items = malloc(capacity * sizeof(Path));
 	q->capacity = capacity;
 	q->size = 0;
 	q->front_ptr = -1;
@@ -57,11 +57,11 @@ bool queue_is_empty(Queue *q) {
 void path_add(Path *p, Cave *c) {
 
 	if (p->path_size == (int)p->capacity) {
+
 		p->capacity *= 2;
 		p->path = realloc(p->path, p->capacity * sizeof(Cave *));
 	}
 	p->path[p->path_size++] = c;
-	// printf("Added a cave to the path: %s\n", c->id);
 }
 
 Cave *path_get_last(Path *p) {
@@ -71,54 +71,43 @@ Cave *path_get_last(Path *p) {
 	return p->path[p->path_size - 1];
 }
 
-void print_path(Path *path) {
-	for (int i = 0; i < path->path_size; i++) {
-		printf("%s,", path->path[i]->id);
+void print_path(Path path) {
+	for (int i = 0; i < path.path_size; i++) {
+		printf("%s,", path.path[i]->id);
 	}
 	printf("\n");
 }
 
-void enqueue(Queue *q, Path *item) {
+void enqueue(Queue *q, Path item) {
 	if (queue_is_full(q)) {
-		printf("Enqueue aborted; queue is full.\n");
-	} else {
-		if (q->front_ptr == -1) {
-			q->front_ptr = 0;
-		}
-
-		q->rear_ptr++;
-		q->items[q->rear_ptr] = item;
-		q->size++;
-		// printf("Added a path to the queue: ");
-		// print_path(item);
+		q->capacity *= 2;
+		q->items = realloc(q->items, q->capacity * sizeof(Path));
 	}
+
+	if (q->front_ptr == -1) {
+		q->front_ptr = 0;
+	}
+
+	q->rear_ptr++;
+	q->items[q->rear_ptr] = item;
+	q->size++;
 }
 
-Path *dequeue(Queue *q) {
-	Path *item;
-	if (queue_is_empty(q)) {
-		printf("Dequeue aborted; queue is full.\n");
-		item = NULL;
-	} else {
-		item = q->items[q->front_ptr];
-		q->front_ptr++;
-		q->size--;
-		
-		if (q->front_ptr > q->rear_ptr) {
-			q->front_ptr = -1;
-			q->rear_ptr = -1;
-		}
+Path dequeue(Queue *q) {
+	Path item = q->items[q->front_ptr];
+	q->front_ptr++;
+	q->size--;
+	
+	if (q->front_ptr > q->rear_ptr) {
+		q->front_ptr = -1;
+		q->rear_ptr = -1;
 	}
 
 	return item;
 }
 
-Path *queue_peek(Queue *q) {
-	if (queue_is_empty(q)) {
-		return NULL;
-	} else {
-		return q->items[q->front_ptr];
-	}
+Path queue_peek(Queue *q) {
+	return q->items[q->front_ptr];
 }
 
 bool path_contains(Path *path, Cave *cave) {
@@ -135,9 +124,10 @@ bool path_contains(Path *path, Cave *cave) {
 }
 
 void path_copy(Path *old_path, Path *new_path) {
-	memcpy(new_path->path, old_path->path, sizeof old_path->path);
+	memcpy(new_path->path, old_path->path, old_path->capacity * sizeof old_path->path);
+	// new_path->path = old_path->path;
 	new_path->capacity = old_path->capacity;
-	// new_path->path_size
+	new_path->path_size = old_path->path_size;
 }
 
 int cave_type(char id[ID_LEN]) {
@@ -179,48 +169,53 @@ void reset_cave(Cave *caves, int size) {
 
 void print_queue(Queue *queue) {
 
-	printf("START QUEUE (%d, %d, size: %d)\n", queue->front_ptr, queue->rear_ptr, queue->size);
+	if (!queue_is_empty(queue)) {
+		printf("START QUEUE (%d, %d, size: %d)\n", queue->front_ptr, queue->rear_ptr, queue->size);
 
-	print_path(queue_peek(queue));
+		print_path(queue_peek(queue));
 
-	for (int i = queue->front_ptr; i < queue->rear_ptr; i++) {
-		print_path(queue->items[i]);
+		for (int i = queue->front_ptr; i < queue->rear_ptr; i++) {
+			print_path(queue->items[i]);
+		}
+
+		printf("END QUEUE\n");
+	} else {
+		printf("Cannot print queue: it is empty\n");
 	}
-
-	printf("END QUEUE\n");
 }
 
 int path_search(Cave *start, Cave *end, int size) {
 	
 	Queue queue;
-	init_queue(&queue, 50000);
+	init_queue(&queue, 1024);
 
 	Path path;
 	init_path(&path, size);
 
 	path_add(&path, start);
-	enqueue(&queue, &path);
+	enqueue(&queue, path);
 
 	Cave *cave;
 	int path_count = 0;
 	while(!queue_is_empty(&queue)) {
-		print_queue(&queue);
-		path = *dequeue(&queue);
+		path = dequeue(&queue);
 		cave = path_get_last(&path);
 
 		if (strcmp(cave->id, end->id) == 0) {
 			printf("Reached the end: ");
-			print_path(&path);
-			printf("\n\n");
+			print_path(path);
 			path_count++;
-			// path = *dequeue(&queue);
 		}
 
 		for (int i = 0; i < cave->adj_count; i++) {
 			if (!path_contains(&path, cave->adj[i])) {
-				Path new_path = path;
+				Path new_path;
+				init_path(&new_path, path.capacity);
+				path_copy(&path, &new_path);
+
 				path_add(&new_path, cave->adj[i]);
-				enqueue(&queue, &new_path);
+
+				enqueue(&queue, new_path);
 			}
 		}
 	}
@@ -232,7 +227,7 @@ int main() {
 
 	FILE *input;
 	
-	if ((input = fopen("../small_input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
