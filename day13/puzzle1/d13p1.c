@@ -64,10 +64,22 @@ void fold_paper(Fold fold, int paper[ARR_SIZE][ARR_SIZE], int *rows, int *cols) 
             }
         }
 
-        *rows -= (fold.value + 1);
+        *rows = fold.value;
 
     } else if (fold.axis == VERTICAL) { //fold on x=...
-        printf("fold on x=...\n");
+        
+        int index = 0;
+        for (int col = *cols - 1; col > fold.value; col--) {
+            for (int row = 0; row < *rows; row++) {
+                index = col - (2 * (col - fold.value));
+                paper[row][index] = paper[row][index] || paper[row][col];
+                // printf("Overlapping (%d, %d) with (%d, %d)...", row, col, row, index);
+                // printf("%d || %d -> %d\n", paper[row][index], paper[row][col], paper[row][index] || paper[row][col]);
+            }
+        }
+
+        *cols = fold.value;
+
     } else {
         printf("oops\n");
     }
@@ -77,7 +89,7 @@ int main() {
 
     FILE *input;
 	
-	if ((input = fopen("../test_input.txt", "r")) == NULL) {
+	if ((input = fopen("../input.txt", "r")) == NULL) {
 		printf("Unable to open file");
 		exit(EXIT_FAILURE);
 	}
@@ -110,8 +122,8 @@ int main() {
     }
  
     fold_paper(folds[0], paper, &y_max, &x_max);
-    // fold_paper(folds[0], paper, &y_max, &x_max); DO X FOLD TO TEST IT
-    print_paper(paper, y_max, x_max);
+    // fold_paper(folds[1], paper, &y_max, &x_max);
+    // print_paper(paper, y_max, x_max);
     printf("After the folds there are %d dots.\n", count_dots(paper, y_max, x_max));
 
     fclose(input);
