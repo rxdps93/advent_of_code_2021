@@ -2,25 +2,75 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#define ARR_SIZE 1024
+#define ARR_SIZE 2048
+#define HORIZONTAL 'y'
+#define VERTICAL 'x'
 
 typedef struct Fold {
     char axis;
     int value;
 } Fold;
 
-void print_paper(int paper[ARR_SIZE][ARR_SIZE]) {
-    for (int row = 0; row < 14; row++) {
-        for (int col = 0; col < 10; col++) {
+void print_paper(int paper[ARR_SIZE][ARR_SIZE], int rows, int cols) {
+    printf("   ");
+    for (int i = 0; i < cols; i++) {
+        printf("%d", i);
+    }
+    printf("\n");
+
+    for (int row = 0; row < rows; row++) {
+        printf("%2d ", row);
+        for (int col = 0; col < cols; col++) {
             if (paper[row][col] == 1) {
                 printf("#");
             } else {
                 printf(".");
             }
         }
-        printf("\n");
+        printf(" %2d\n", row);
+    }
+    printf("   ");
+    for (int i = 0; i < cols; i++) {
+        printf("%d", i);
     }
     printf("\n");
+}
+
+int count_dots(int paper[ARR_SIZE][ARR_SIZE], int rows, int cols) {
+
+    int dots = 0;
+    for (int row = 0; row < rows; row++) {
+        for (int col = 0; col < cols; col++) {
+            if (paper[row][col] == 1) {
+                dots++;
+            }
+        }
+    }
+
+    return dots;
+}
+
+void fold_paper(Fold fold, int paper[ARR_SIZE][ARR_SIZE], int *rows, int *cols) {
+
+    if (fold.axis == HORIZONTAL) { // fold on y=...
+
+        int index = 0;
+        for (int row = *rows - 1; row > fold.value; row--) {
+            for (int col = 0; col < *cols; col++) {
+                index = row - (2 * (row - fold.value));
+                paper[index][col] = paper[index][col] || paper[row][col];
+                // printf("Overlapping (%d, %d) with (%d, %d)...", row, col, index, col);
+                // printf("%d || %d -> %d\n", paper[index][col], paper[row][col], paper[index][col] || paper[row][col]);
+            }
+        }
+
+        *rows -= (fold.value + 1);
+
+    } else if (fold.axis == VERTICAL) { //fold on x=...
+        printf("fold on x=...\n");
+    } else {
+        printf("oops\n");
+    }
 }
 
 int main() {
@@ -32,13 +82,13 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-    int paper[ARR_SIZE][ARR_SIZE] = { 0 };
+    static int paper[ARR_SIZE][ARR_SIZE] = { 0 };
     int x_max = INT_MIN;
     int y_max = INT_MIN;
     int dot_x, dot_y;
     while (fscanf(input, "%d,%d", &dot_x, &dot_y) == 2) {
         
-        printf("Adding dot at (%d, %d)\n", dot_x, dot_y);
+        // printf("Adding dot at (%d, %d)\n", dot_x, dot_y);
         paper[dot_y][dot_x] = 1;
 
         if (dot_x > x_max) {
@@ -48,20 +98,21 @@ int main() {
         if (dot_y > y_max) {
             y_max = dot_y;
         }
-
-        print_paper(paper);
     }
+    printf("%d, %d\n", x_max, y_max);
+    x_max++;
+    y_max++;
 
     Fold folds[ARR_SIZE];
-    Fold fold;
     int fold_count = 0;
-    int val;
-    char c;
-    while (fscanf(input, "fold along %c=%d", &c, &val) == 2) {
-        fold.axis = c;
-        fold.value = val;
-        folds[fold_count++] = fold;
+    while (fscanf(input, "fold along %c=%d ", &folds[fold_count].axis, &folds[fold_count].value) > 0) {
+        fold_count++;
     }
+ 
+    fold_paper(folds[0], paper, &y_max, &x_max);
+    // fold_paper(folds[0], paper, &y_max, &x_max); DO X FOLD TO TEST IT
+    print_paper(paper, y_max, x_max);
+    printf("After the folds there are %d dots.\n", count_dots(paper, y_max, x_max));
 
     fclose(input);
     return EXIT_SUCCESS;
