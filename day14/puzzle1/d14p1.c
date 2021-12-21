@@ -5,7 +5,6 @@
 
 #define ARR 1024
 #define STEPS 10
-#define ELEMENTS { 'N', 'C', 'H', 'B'}
 
 typedef struct Element Element;
 typedef struct Instruction Instruction;
@@ -156,25 +155,17 @@ int main() {
         log_unique_element(c, element_ids, &unique_elements);
     }
 
-    for (int i = 0; i < unique_elements; i++) {
-        printf("%c ", element_ids[i]);
-    }
-    printf("\n");
-
     int size = 0;
     Element *insert_pairs[ARR];
     for (int step = 0; step < STEPS; step++) {
         for (int i = 0; i < icount; i++) {
-            // printf("Checking pair #%d: %s -> %c\n", i, iset[i].pair, iset[i].elmnt);
+
             size = find_pair(head, iset[i].pair, insert_pairs);
             for (int p = 0; p < size; p++) {
                 queue_insert(insert_pairs[p], iset[i].elmnt);
             }
-            // queue_insert(find_pair(head, iset[i].pair), iset[i].elmnt);
         }
         process_queue(head);
-
-        printf("End of step %d, there are %d elements.\n", step + 1, list_size(head));
     }
 
     long count = 0;
