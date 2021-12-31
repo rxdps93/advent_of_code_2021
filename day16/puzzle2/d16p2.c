@@ -14,6 +14,7 @@ void process_packets(int *binary, int *index, int number, int *v_sum) {
     if (id == 4) {
         // String literal
         while (binary[*index] == 1) {
+            // Calculate value; store somewhere -> keep in struct?
             *index += 5;
         }
         *index += 5;
@@ -27,6 +28,7 @@ void process_packets(int *binary, int *index, int number, int *v_sum) {
 
             int sub_end = *index + bit_count;
             while (*index < sub_end) {
+                // Somehow store subpackets for each recursion, process below -> maybe struct?
                 process_packets(binary, index, bit_count, v_sum);
             }
         } else {
@@ -35,10 +37,20 @@ void process_packets(int *binary, int *index, int number, int *v_sum) {
             *index += 11;
 
             for (int i = 0; i < subpackets; i++) {
+                // Somehow store subpackets for each recursion, process below -> maybe struct?
                 process_packets(binary, index, number, v_sum);
             }
         }
     }
+
+    // Process subpackets here (stored above)
+    // 0 -> sum
+    // 1 -> product
+    // 2 -> min
+    // 3 -> max
+    // 5 -> gt (always 2 subs)
+    // 6 -> lt (always 2 subs)
+    // 7 -> eq (always 2 subs)
 }
 
 int main() {
