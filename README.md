@@ -50,7 +50,7 @@ I'm doing it in C.
   - [x] puzzle 1
   - [x] puzzle 2
 - [ ] Day 16
-  - [ ] puzzle 1
+  - [x] puzzle 1
   - [ ] puzzle 2
 - [ ] Day 17
   - [ ] puzzle 1

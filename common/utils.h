@@ -1,3 +1,6 @@
+#include <stdarg.h>
+#include <math.h>
+
 typedef struct {
 	int *array;
 	size_t used;
@@ -49,4 +52,38 @@ void free_IntArray(IntArray *a) {
 
 int ctoi(char c) {
 	return (int)(c - '0');
+}
+
+int ctox(char c) {
+
+	int val = ctoi(c);
+	if (c > '9') {
+		val -= 7;
+	}
+
+	return val;
+}
+
+int binary_to_int_range(int *binary, int index, int number) {
+
+	int val = 0;
+	for (int i = 0; i < number; i++) {
+		val += binary[index + i] * (pow(2, (number - 1) - i));
+	}
+
+	return val;
+}
+
+int binary_to_int(int num_bits, ...) {
+
+	va_list valist;
+	int val = 0;
+
+	va_start(valist, num_bits);
+
+	for (int i = 0; i < num_bits; i++) {
+		val += va_arg(valist, int) * (pow(2, (num_bits - 1) - i) );
+	}
+
+	return val;
 }
