@@ -64,6 +64,16 @@ int ctox(char c) {
 	return val;
 }
 
+long long binary_to_llong_range(int *binary, int index, int number) {
+
+	long long val = 0;
+	for (int i = 0; i < number; i++) {
+		val += binary[index + i] * (pow(2, (number - 1) - i));
+	}
+
+	return val;
+}
+
 int binary_to_int_range(int *binary, int index, int number) {
 
 	int val = 0;

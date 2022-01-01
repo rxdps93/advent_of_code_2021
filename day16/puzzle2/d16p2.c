@@ -3,7 +3,7 @@
 #include <limits.h>
 #include "../../common/utils.h"
 
-void process_packets(int *binary, int *index, int number, int *v_sum) {
+long long process_packets(int *binary, int *index, int number, int *v_sum) {
 
     *v_sum += binary_to_int_range(binary, *index, 3);
     *index += 3;
@@ -11,25 +11,35 @@ void process_packets(int *binary, int *index, int number, int *v_sum) {
     int id = binary_to_int_range(binary, *index, 3);
     *index += 3;
 
+    long long packet_value = 0;
     if (id == 4) {
         // String literal
+        int bin_lit[1024];
+        int lit_index = 0;
         while (binary[*index] == 1) {
-            // Calculate value; store somewhere -> keep in struct?
+            for (int i = 0; i < 4; i++) {
+                bin_lit[lit_index++] = binary[(*index + 1) + i];
+            }
             *index += 5;
         }
+
+        for (int i = 0; i < 4; i++) {
+            bin_lit[lit_index++] = binary[(*index + 1) + i];
+        }
         *index += 5;
-        // take care of 0s?
+
+        packet_value += binary_to_llong_range(bin_lit, 0, lit_index);
     } else {
         // Operator
+        int sub_index = 0;
+        long long subpacket_values[1024];
         if (binary[(*index)++] == 0) {
             // 15 bits -> number of bits of all subpackets within
             int bit_count = binary_to_int_range(binary, *index, 15);
             *index += 15;
-
-            int sub_end = *index + bit_count;
-            while (*index < sub_end) {
-                // Somehow store subpackets for each recursion, process below -> maybe struct?
-                process_packets(binary, index, bit_count, v_sum);
+            int stop = *index + bit_count;
+            while (*index < stop) {
+                subpacket_values[sub_index++] = process_packets(binary, index, bit_count, v_sum);
             }
         } else {
             // 11 bits -> number of subpackets within
@@ -37,20 +47,61 @@ void process_packets(int *binary, int *index, int number, int *v_sum) {
             *index += 11;
 
             for (int i = 0; i < subpackets; i++) {
-                // Somehow store subpackets for each recursion, process below -> maybe struct?
-                process_packets(binary, index, number, v_sum);
+                subpacket_values[sub_index++] = process_packets(binary, index, number, v_sum);
             }
+        }
+
+        // Process subpackets here (stored above)
+        switch (id) {
+            case 0: // sum
+                for (int i = 0; i < sub_index; i++) {
+                    packet_value += subpacket_values[i];
+                }
+                break;
+            case 1: {
+                // product
+                long long product = 1;
+                for (int i = 0; i < sub_index; i++) {
+                    product *= subpacket_values[i];
+                }
+                packet_value = product;
+                break;
+            }
+            case 2: {
+                // min
+                long long min = LLONG_MAX;
+                for (int i = 0; i < sub_index; i++) {
+                    if (subpacket_values[i] < min) {
+                        min = subpacket_values[i];
+                    }
+                }
+                packet_value = min;
+                break;
+            }
+            case 3: {
+                // max
+                long long max = LLONG_MIN;
+                for (int i = 0; i < sub_index; i++) {
+                    if (subpacket_values[i] > max) {
+                        max = subpacket_values[i];
+                    }
+                }
+                packet_value = max;
+                break;
+            }
+            case 5: // gt (always 2 subs)
+                packet_value = (subpacket_values[0] > subpacket_values[1]);
+                break;
+            case 6: // lt (always 2 subs)
+                packet_value = (subpacket_values[0] < subpacket_values[1]);
+                break;
+            case 7: // eq (always 2 subs)
+                packet_value = (subpacket_values[0] == subpacket_values[1]);
+                break;
         }
     }
 
-    // Process subpackets here (stored above)
-    // 0 -> sum
-    // 1 -> product
-    // 2 -> min
-    // 3 -> max
-    // 5 -> gt (always 2 subs)
-    // 6 -> lt (always 2 subs)
-    // 7 -> eq (always 2 subs)
+    return packet_value;
 }
 
 int main() {
@@ -96,9 +147,9 @@ int main() {
 
     int version_sum = 0;
     int index = 0;
-    process_packets(binary_string, &index, hex_length * 4, &version_sum);
+    long long value = process_packets(binary_string, &index, hex_length * 4, &version_sum);
 
-    printf("The sum of version numbers is %d\n", version_sum);
+    printf("The value is %lld\n", value);
 
     fclose(input);
     return EXIT_SUCCESS;
