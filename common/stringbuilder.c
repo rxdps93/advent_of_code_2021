@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include "stringbuilder.h"
 
 static const size_t sb_default_size = 64;
@@ -19,6 +18,7 @@ StringBuilder *sb_create(void) {
     *sb->str = '\0';
     sb->allocated = sb_default_size;
     sb->len = 0;
+    return sb;
 }
 
 void sb_free(StringBuilder *sb) {

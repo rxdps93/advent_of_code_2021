@@ -26,9 +26,11 @@ void sb_append_int(StringBuilder *sb, int i);
 // Erase data
 void sb_erase(StringBuilder *sb);
 
+// Cut off contents
 void sb_truncate(StringBuilder *sb, size_t len);
 
 // Current length
 size_t sb_length(const StringBuilder *sb);
 
+// Get contents as a string
 char *sb_get(const StringBuilder *sb);
