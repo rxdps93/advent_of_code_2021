@@ -5,38 +5,17 @@
 /************
  * FOR NODE *
  ************/
-Node *init_node(void) {
-    return create_node(-1, -1, NULL, NULL, NULL);
+void init_node(Node *node) {
+    create_node(node, -1, -1, NULL, NULL, NULL);
 }
 
-Node *create_node(int left_val, int right_val, Node *parent, Node *left_child, Node *right_child) {
-    Node *node = malloc(sizeof(Node));
-
+void create_node(Node *node, int left_val, int right_val, Node *parent, Node *left_child, Node *right_child) {
     node->left_value = left_val;
     node->right_value = right_val;
 
     node->parent = parent;
     node->left_child = left_child;
     node->right_child = right_child;
-    // if (parent != NULL) {
-    //     node->parent = parent;
-    // } else {
-    //     node->parent = malloc(sizeof(Node));
-    // }
-
-    // if (left_child != NULL) {
-    //     node->left_child = left_child;
-    // } else {
-    //     node->left_child = malloc(sizeof(Node));
-    // }
-
-    // if (right_child != NULL) {
-    //     node->right_child = right_child;
-    // } else {
-    //     node->right_child = malloc(sizeof(Node));
-    // }
-
-    return node;
 }
 
 void free_node(Node *node) {
@@ -56,13 +35,10 @@ int magnitude(Node *root) {
 }
 
 void copy_node(Node *to, Node *from) {
-
+    
     to->left_value = from->left_value;
     to->right_value = from->right_value;
 
-    // memcpy(to->parent, from->parent, sizeof(Node));
-    // memcpy(to->left_child, from->left_child, sizeof(Node));
-    // memcpy(to->right_child, from->right_child, sizeof(Node));
     to->parent = from->parent;
     to->left_child = from->left_child;
     to->right_child = from->right_child;
@@ -71,17 +47,14 @@ void copy_node(Node *to, Node *from) {
 /*************
  * FOR STACK *
  *************/
-Stack *create_stack(size_t capacity) {
-    Stack *stack = malloc(sizeof(Stack));
+void create_stack(Stack *stack, size_t capacity) {
     stack->capacity = capacity;
     stack->top = -1;
-    stack->items = malloc(stack->capacity * sizeof(Node));
-    return stack;
+    stack->items = (Node *)malloc(stack->capacity * sizeof(Node));
 }
 
 void free_stack(Stack *stack) {
     free(stack->items);
-    free(stack);
 }
 
 int stack_is_full(Stack *stack) {
@@ -98,18 +71,12 @@ void push(Stack *stack, Node item) {
     }
 }
 
-void pop(Stack *stack, Node *item) {
-    if (stack_is_empty(stack)) {
-        item = NULL;
-    } else {
-        item = &stack->items[stack->top--];
-    }
+Node pop(Stack *stack) {
+
+    return stack->items[stack->top--];
 }
 
-void peek(Stack *stack, Node *item) {
-    if (stack_is_empty(stack)) {
-        item = NULL;
-    } else {
-        item = &stack->items[stack->top];
-    }
+Node peek(Stack *stack) {
+
+    return stack->items[stack->top];
 }

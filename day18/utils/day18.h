@@ -9,7 +9,6 @@ struct Node {
     int right_value;
 
     Node *parent;
-
     Node *left_child;
     Node *right_child;
 };
@@ -23,9 +22,9 @@ struct Stack {
 /************
  * FOR NODE *
  ************/
-Node *init_node(void);
+void init_node(Node *node);
 
-Node *create_node(int left_val, int right_val, Node *parent, Node *left_child, Node *right_child);
+void create_node(Node *node, int left_val, int right_val, Node *parent, Node *left_child, Node *right_child);
 
 void free_node(Node *node);
 
@@ -36,7 +35,7 @@ void copy_node(Node *to, Node *from);
 /*************
  * FOR STACK *
  *************/
-Stack *create_stack(size_t capacity);
+void create_stack(Stack *stack, size_t capacity);
 
 void free_stack(Stack *stack);
 
@@ -46,6 +45,6 @@ int stack_is_empty(Stack *stack);
 
 void push(Stack *stack, Node item);
 
-void pop(Stack *stack, Node *item);
+Node pop(Stack *stack);
 
-void peek(Stack *stack, Node *item);
+Node peek(Stack *stack);
