@@ -1,148 +1,95 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h>
 #include "../../common/utils.h"
-#include "../../common/stringbuilder.h"
-#include "../utils/day18.h"
 
-#define LEFT_VAL "[0-9]+,"
-#define RIGHT_VAL ",[0-9]+"
+typedef struct Node Node;
 
-char *node_to_string(Node *root) {
+struct Node {
+    int value;
 
-    StringBuilder *sb = sb_create();
-    sb_append_char(sb, '[');
+    Node *left_child;
+    Node *right_child;
+};
 
+void free_nodes(Node *root) {
     if (root->left_child != NULL) {
-        sb_append_str(sb, node_to_string(root->left_child), 0);
-    } else {
-        sb_append_int(sb, root->left_value);
+        free_nodes(root->left_child);
+        free(root->left_child);
     }
-
-    sb_append_char(sb, ',');
 
     if (root->right_child != NULL) {
-        sb_append_str(sb, node_to_string(root->right_child), 0);
+        free_nodes(root->right_child);
+        free(root->right_child);
+    }
+}
+
+Node *copy_nodes(Node *from) {
+    Node *to = malloc(sizeof(Node));
+    if (to == NULL) {
+        printf("Malloc failed in func: copy_node");
+        return NULL;
+    }
+
+    to->value = from->value;
+    if (from->left_child != NULL) {
+        to->left_child = copy_nodes(from->left_child);
     } else {
-        sb_append_int(sb, root->right_value);
+        to->left_child = NULL;
     }
 
-    sb_append_char(sb, ']');
-    char *str = sb_get(sb);
-    sb_free(sb);
-    return str;
+    if (from->right_child != NULL) {
+        to->right_child = copy_nodes(from->right_child);
+    } else {
+        to->right_child = NULL;
+    }
+
+    return to;
 }
 
-int str_match(char *to_check, char *regex_str) {
-    int status;
-    regex_t regex;
-
-    status = regcomp(&regex, regex_str, REG_EXTENDED);
-    if (status) {
-        printf("Could not establish regex\n");
-        return REG_NOMATCH;
+void print_nodes(Node *root) {
+    if (root->left_child == NULL && root->right_child == NULL) {
+        printf("%d", root->value);
+    } else {
+        printf("[");
+        print_nodes(root->left_child);
+        printf(",");
+        print_nodes(root->right_child);
+        printf("]");
     }
-
-    status = regexec(&regex, to_check, 0, NULL, 0);
-
-    regfree(&regex);
-    return status;
 }
 
-Node parse_input(char str[100]) {
+int is_number(char c) {
+    int i = ctoi(c);
+    return i >= 0 && i <= 9;
+}
 
-    if (str == NULL || strlen(str) == 0) {
-        Node ret;
-        init_node(&ret);
-        return ret;
-    }
+void parse_input(char str[100], int index, Node *node) {
 
-    Stack stack;
-    create_stack(&stack, 1024);
-    Node current;
-    init_node(&current);
-    push(&stack, current);
+    for (int i = index; i < (int)strlen(str); i++) {
+        if (is_number(str[i])) {
+            node->value = ctoi(str[i]);
+            node->left_child = NULL;
+            node->right_child = NULL;
+            break;
+        } else if (str[i] == '[') {
+            node->left_child = malloc(sizeof(Node));
+            node->right_child = malloc(sizeof(Node));
+            i++;
 
-    printf("Checking: %s\n", str);
-    for (int i = 0; i < (int)strlen(str); i++) {
-        
-        if (str[i] == '[') {
-            printf("\tNew node; push to stack\n");
-            current = pop(&stack);
-            Node new_node;
-            create_node(&new_node, -1, -1, &current, NULL, NULL);
-            push(&stack, new_node);
-        } else if (str[i] ==']') {
-            printf("\tEnd node; pop from stack\n");
-            Node child = pop(&stack);
+            parse_input(str, i, node->left_child);
+            i++;
 
-            printf("child: %d, %d; current: %d, %d\n", child.left_value, child.right_value, current.left_value, current.right_value);
-
-            if (stack_is_empty(&stack)) {
-                copy_node(&current, &child);
-                break;
-            }
-
-            current = peek(&stack);
-
-            if (current.left_value == -1 && current.left_child == NULL) {
-                copy_node(current.left_child, &child);
-            } else if (current.right_value == -1 && current.right_child == NULL) {
-                copy_node(current.right_child, &child);
-            }
+            parse_input(str, i, node->right_child);
+            i++;
         } else {
-            char sub_str[3];
-            strncpy(sub_str, &str[i], 2);
-            sub_str[2] = '\0';
-
-            if (str_match(sub_str, LEFT_VAL) == 0) {
-                printf("\tLeft Value: %d\n", ctoi(str[i]));
-                current = pop(&stack);
-                current.left_value = ctoi(str[i]);
-                push(&stack, current);
-            } else if (str_match(sub_str, RIGHT_VAL) == 0) { 
-                printf("\tRight Value: %d\n", ctoi(str[i + 1]));
-                current = pop(&stack);
-                current.right_value = ctoi(str[i + 1]);
-                push(&stack, current);
-            }
+            printf("???\n");
+            break;
         }
     }
-
-    free_stack(&stack);
-    return current;
-}
-
-Node add(Node a, Node b) {
-
-    printf("%s\n", node_to_string(&a));
-    printf("%s\n", node_to_string(&b));
-
-    if ((a.left_value == -1 && a.right_value == -1)) {
-        printf("first\n");
-        return b;
-    }
-
-    if ((b.left_value == -1 && b.right_value == -1)) {
-        printf("second\n");
-        return a;
-    }
-
-    Node node;
-    init_node(&node);
-
-    node.left_child = &a;
-    node.right_child = &b;
-    a.parent = &node;
-    b.parent = &node;
-
-    printf("third\n");
-    return node;
 }
 
 int main() {
-
     FILE *input;
 
     if ((input = fopen("../test_inputs/test_input_1.txt", "r")) == NULL) {
@@ -154,18 +101,12 @@ int main() {
     int count = 0;
     while (fscanf(input, "%s\n", input_str[count]) == 1) {
         count++;
-    };
-
-    Node root;
-    init_node(&root);
-    for (int i = 0; i < count; i++) {
-        Node node = parse_input(input_str[i]);
-        printf("%s\n", node_to_string(&root));
-        printf("%s\n", node_to_string(&node));
-        root = add(root, node);
-        printf("%s\n", node_to_string(&root));
     }
-    printf("%s\n", node_to_string(&root));
+
+    Node nodes[count];
+    for (int i = 0; i < count; i++) {
+        parse_input(input_str[i], 0, &nodes[i]);
+    }
 
     fclose(input);
     return EXIT_SUCCESS;

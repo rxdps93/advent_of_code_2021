@@ -32,6 +32,8 @@ int magnitude(Node *root);
 
 void copy_node(Node *to, Node *from);
 
+int is_null(Node *node);
+
 /*************
  * FOR STACK *
  *************/

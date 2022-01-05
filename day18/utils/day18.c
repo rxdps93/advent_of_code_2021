@@ -44,6 +44,22 @@ void copy_node(Node *to, Node *from) {
     to->right_child = from->right_child;
 }
 
+int is_null(Node *node) {
+    
+    int status;
+
+    if (node == NULL) {
+        status = 1;
+    } else {
+        status = (node->left_value == -1) && (node->right_value == -1)
+            && node->parent == NULL
+            && node->left_child == NULL
+            && node->right_child == NULL;
+    }
+
+    return status;
+}
+
 /*************
  * FOR STACK *
  *************/
