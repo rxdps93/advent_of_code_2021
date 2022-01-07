@@ -88,37 +88,6 @@ long magnitude(Node *node) {
     return (3 * left_val) + (2 * right_val);
 }
 
-int split(Node *node) {
-
-    if (node->left_child == NULL && node->right_child == NULL) {
-        
-        if (node->value >= 10) {
-
-            node->left_child = malloc(sizeof(Node));
-            node->right_child = malloc(sizeof(Node));
-            
-            node->left_child->left_child = NULL;
-            node->left_child->right_child = NULL;
-            node->left_child->value = node->value / 2;
-
-            node->right_child->left_child = NULL;
-            node->right_child->right_child = NULL;
-            node->right_child->value = (node->value / 2) + (node->value % 2);
-            return true;
-        }
-    } else {
-
-        if (split(node->left_child)) {
-            return true;
-        }
-        if (split(node->right_child)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 int get_left_node(Node *current, Node *explode, Node **prev, int *left) {
     if (current == explode) {
         *left = true;
@@ -206,23 +175,47 @@ int explode(Node *node, int depth) {
     return false;
 }
 
+int split(Node *node) {
+
+    if (node->left_child == NULL) {
+        
+        if (node->value >= 10) {
+
+            node->left_child = malloc(sizeof(Node));
+            node->right_child = malloc(sizeof(Node));
+            
+            node->left_child->left_child = NULL;
+            node->left_child->right_child = NULL;
+            node->left_child->value = node->value / 2;
+
+            node->right_child->left_child = NULL;
+            node->right_child->right_child = NULL;
+            node->right_child->value = (node->value / 2) + (node->value % 2);
+            return true;
+        }
+    } else {
+
+        if (split(node->left_child)) {
+            return true;
+        }
+        if (split(node->right_child)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void reduce(Node *node) {
 
     int to_reduce = true;
-    if (to_reduce) {
+    while (to_reduce == true) {
         int to_explode = true;
         while (to_explode) {
             to_explode = explode(node, 0);
-            printf("EX: ");
-            print_nodes_newline(node);
         }
-        to_reduce = split(node);
-        printf("S1: ");
-        print_nodes_newline(node);
 
         to_reduce = split(node);
-        printf("S2: ");
-        print_nodes_newline(node);
     }
 }
 
@@ -232,9 +225,9 @@ int main() {
     // test_input_1         PASS
     // test_input_2         PASS
     // test_input_3         PASS
-    // test_input_4         FAIL - Not split enough
-    // final_test_input     FAIL - Not split enough
-    if ((input = fopen("../test_inputs/test_input_4.txt", "r")) == NULL) {
+    // test_input_4         PASS
+    // final_test_input     PASS
+    if ((input = fopen("../input.txt", "r")) == NULL) {
         printf("Unable to open file");
         exit(EXIT_FAILURE);
     }
@@ -253,15 +246,13 @@ int main() {
     }
 
     Node *result = add(&nodes[0], &nodes[1]);
-    print_nodes_newline(result);
     reduce(result);
-    print_nodes_newline(result);
-    // for (int i = 2; i < count; i++) {
-    //     result = add(result, &nodes[i]);
-    //     reduce(result);
-    // }
+    for (int i = 2; i < count; i++) {
+        result = add(result, &nodes[i]);
+        reduce(result);
+    }
 
-    // print_nodes_newline(result);
+    print_nodes_newline(result);
     printf("Magnitude is: %ld\n", magnitude(result));
 
     // free_nodes(result);
