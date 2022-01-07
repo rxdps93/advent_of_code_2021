@@ -28,6 +28,26 @@ void free_nodes(Node *root) {
     }
 }
 
+Node *copy_nodes(Node *node) {
+
+    Node *new_node = malloc(sizeof(Node));
+    if (new_node == NULL) {
+        printf("Unable to copy node\n");
+        return NULL;
+    }
+
+    new_node->value = node->value;
+    if (node->left_child != NULL && node->right_child != NULL) {
+        new_node->left_child = copy_nodes(node->left_child);
+        new_node->right_child = copy_nodes(node->right_child);
+    } else {
+        new_node->left_child = NULL;
+        new_node->right_child = NULL;
+    }
+
+    return new_node;
+}
+
 void print_nodes(Node *root) {
     if (root->left_child == NULL && root->right_child == NULL) {
         printf("%d", root->value);
@@ -223,12 +243,7 @@ void reduce(Node *node) {
 int main() {
     FILE *input;
 
-    // test_input_1         TBD
-    // test_input_2         TBD
-    // test_input_3         TBD
-    // test_input_4         TBD
-    // final_test_input     TBD
-    if ((input = fopen("../test_inputs/final_test_input.txt", "r")) == NULL) {
+    if ((input = fopen("../input.txt", "r")) == NULL) {
         printf("Unable to open file");
         exit(EXIT_FAILURE);
     }
@@ -253,20 +268,26 @@ int main() {
         for (int j = 0; j < count; j++) {
 
             if (i != j) {
-                result = add(&nodes[i], &nodes[j]);
+
+                Node *copy_a = copy_nodes(&nodes[i]);
+                Node *copy_b = copy_nodes(&nodes[j]);
+
+                result = add(copy_a, copy_b);
                 reduce(result);
                 
                 mag = magnitude(result);
                 if (mag > max_magnitude) {
                     max_magnitude = mag;
                 }
+
+                free_nodes(copy_a);
+                free_nodes(copy_b);
             }
         }
     }
 
     printf("Maximum magnitude is: %ld\n", max_magnitude);
 
-    // free_nodes(result);
     fclose(input);
     return EXIT_SUCCESS;
 }
