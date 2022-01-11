@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
-#include <string.h>
 
 #define TEST 0
 #define ROTATIONS 24
