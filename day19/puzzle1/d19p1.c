@@ -5,12 +5,9 @@
 #define TEST 0
 #define ROTATIONS 24
 
-enum axis {X, Y, Z};
-
 typedef struct Coords Coords;
 typedef struct Matrix Matrix;
 typedef struct Scanner Scanner;
-typedef enum axis Axis;
 
 struct Coords {
     int x;
@@ -51,10 +48,6 @@ void create_scanner(Scanner *s, size_t capacity) {
     s->beacons = malloc(capacity * sizeof(Coords));
     s->aligned_to = NULL;
     s->rotation = NULL;
-}
-
-int cmpfunc (const void * a, const void * b) {
-   return ( *(int*)a - *(int*)b );
 }
 
 int manhattan_dist(Coords a, Coords b) {
