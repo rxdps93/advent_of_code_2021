@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+#include <string.h>
 
 #define TEST 0
 #define ROTATIONS 24
@@ -34,11 +35,15 @@ struct Scanner {
     Scanner *aligned_to;
     const Matrix *rotation;
     Coords rel_pos;
+
+    int *matches;
+    int match_count;
 };
 
 void free_data(Scanner *scanners, int scanner_count) {
     for (int i = 0; i < scanner_count; i++) {
         free(scanners[i].beacons);
+        free(scanners[i].matches);
     }
     free(scanners);
 }
@@ -49,6 +54,15 @@ void create_scanner(Scanner *s, size_t capacity) {
     s->beacons = malloc(capacity * sizeof(Coords));
     s->aligned_to = NULL;
     s->rotation = NULL;
+}
+
+int cmpfunc (const void * a, const void * b) {
+   return ( *(int*)a - *(int*)b );
+}
+
+int manhattan_dist(Coords a, Coords b) {
+
+    return abs(a.x - b.x) + abs(a.y - b.y) + abs(a.z - b.z);
 }
 
 Coords copy_coords(Coords coord) {
@@ -140,46 +154,16 @@ int align_scanners(Scanner *base, Scanner *test, const Matrix rot_mats[ROTATIONS
                     test->rotation = &rot_mats[rot];
                     test->rel_pos = copy_coords(coord);
 
-                    // printf("Overlap between scanners %d and %d\n", base->name, test->name);
                     return 1;
                 }
             }
         }
     }
 
-    // printf("No overlap between scanners %d and %d\n", base->name, test->name);
     return 0;
 }
 
-int main() {
-
-    clock_t start, align, stop;
-    start = clock();
-    FILE *input;
-    char *file_name = TEST ? "../test_input.txt" : "../input.txt";
-
-    if ((input = fopen(file_name, "r")) == NULL) {
-        printf("Unable to open file");
-        exit(EXIT_FAILURE);
-    }
-
-    Scanner *scanners = malloc((TEST ? 5 : 39) * sizeof(Scanner));
-    int scanner_count = 0;
-    int beacon_size = 0;
-    int x, y, z;
-    while (fscanf(input, "--- scanner %d ---\n", &scanner_count) == 1) {
-        create_scanner(&scanners[scanner_count], 50);
-        while(fscanf(input, "%d, %d, %d\n", &x, &y, &z) == 3) {
-            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].x = x;
-            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].y = y;
-            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].z = z;
-            scanners[scanner_count].name = scanner_count;
-            scanners[scanner_count].beacon_count++;
-        }
-        beacon_size += scanners[scanner_count].beacon_count;
-        // printf("Scanner %d has detected %d beacons.\n", scanner_count, scanners[scanner_count].beacon_count);
-    }
-    scanner_count++;
+void map_all_alignments(Scanner *scanners, int scanner_count) {
 
     const Matrix rot_mats[ROTATIONS] = {
         {{ 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }},
@@ -209,31 +193,89 @@ int main() {
     };
 
     int loop = 1;
-    int base_scanner = 0;
+    int base = 0;
     while (loop) {
-        for (loop = base_scanner = 0; base_scanner < scanner_count; base_scanner++) {
+        for (loop = base = 0; base < scanner_count; base++) {
 
-            if (base_scanner != 0 && scanners[base_scanner].aligned_to == NULL) {
+            if (base != 0 && scanners[base].aligned_to == NULL) {
                 continue;
             }
 
-            for (int test_scanner = 1; test_scanner < scanner_count; test_scanner++) {
+            for (int test = 0; test < scanners[base].match_count; test++) {
 
-                if (scanners[test_scanner].aligned_to != NULL) {
+                if (scanners[scanners[base].matches[test]].aligned_to != NULL) {
                     continue;
                 }
-                
-                if (align_scanners(&scanners[base_scanner], &scanners[test_scanner], rot_mats)) {
+
+                if (align_scanners(&scanners[base], &scanners[scanners[base].matches[test]], rot_mats)) {
                     loop = 1;
                 }
             }
         }
     }
-    align = clock();
-    printf("Finished with alignment in %f\n", (double)(align - start) / CLOCKS_PER_SEC);
+}
 
-    Coords unique_beacons[beacon_size];
+void map_possible_overlaps(Scanner *scanners, int scanner_count) {
+
+    int ovls[scanner_count];
+    int ovl_count;
+    for (int s1 = 0; s1 < scanner_count; s1++) {
+
+        ovl_count = 0;
+
+        for (int s2 = 1; s2 < scanner_count; s2++) {
+
+            if (s1 == s2) {
+                continue;
+            }
+
+            int dist_a = 0;
+            int dists_a[(scanners[s1].beacon_count * (scanners[s1].beacon_count - 1)) / 2];
+            for (int i = 0; i < scanners[s1].beacon_count; i++) {
+                for (int j = i + 1; j < scanners[s1].beacon_count; j++) {
+                    
+                    dists_a[dist_a++] = manhattan_dist(scanners[s1].beacons[i], scanners[s1].beacons[j]);
+                }
+            }
+
+            int dist_b = 0;
+            int dists_b[(scanners[s2].beacon_count * (scanners[s2].beacon_count - 1)) / 2];
+            for (int i = 0; i < scanners[s2].beacon_count; i++) {
+                for (int j = i + 1; j < scanners[s2].beacon_count; j++) {
+                    dists_b[dist_b++] = manhattan_dist(scanners[s2].beacons[i], scanners[s2].beacons[j]);
+                }
+            }
+
+            int matched[dist_a];
+            int matches = 0;
+            for (int i = 0; i < dist_a; i++) {
+                for (int j = 0; j < dist_b; j++) {
+                    if (dists_a[i] == dists_b[j]) {
+                        matched[matches++] = dists_a[i];
+                        break;
+                    }
+                }
+            }
+
+            if (matches >= 66) {
+                ovls[ovl_count++] = s2;
+            }
+
+        }
+
+        scanners[s1].match_count = 0;
+        scanners[s1].matches = malloc(ovl_count * sizeof(int));
+        for (int i = 0; i < ovl_count; i++) {
+            scanners[s1].matches[scanners[s1].match_count++] = ovls[i];
+        }
+
+    }
+}
+
+int count_unique_beacons(Scanner *scanners, int scanner_count, int total_beacons) {
+
     int beacon_count = 0;
+    Coords unique_beacons[total_beacons];
     for (int scanner = 0; scanner < scanner_count; scanner++) {
         for (int beacon = 0; beacon < scanners[scanner].beacon_count; beacon++) {
             Scanner *s = &scanners[scanner];
@@ -259,11 +301,41 @@ int main() {
         }
     }
 
-    printf("There are %d beacons\n", beacon_count);
+    return beacon_count;
+}
 
-    stop = clock();
-    printf("Found answer in in %f\n", (double)(stop - start) / CLOCKS_PER_SEC);
-    printf("The answer took %f since align end\n", (double)(stop - align) / CLOCKS_PER_SEC);
+int main() {
+
+    FILE *input;
+    char *file_name = TEST ? "../test_input.txt" : "../input.txt";
+
+    if ((input = fopen(file_name, "r")) == NULL) {
+        printf("Unable to open file");
+        exit(EXIT_FAILURE);
+    }
+
+    Scanner *scanners = malloc((TEST ? 5 : 39) * sizeof(Scanner));
+    int scanner_count = 0;
+    int total_beacons = 0;
+    int x, y, z;
+    while (fscanf(input, "--- scanner %d ---\n", &scanner_count) == 1) {
+        create_scanner(&scanners[scanner_count], 50);
+        while(fscanf(input, "%d, %d, %d\n", &x, &y, &z) == 3) {
+            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].x = x;
+            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].y = y;
+            scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].z = z;
+            scanners[scanner_count].name = scanner_count;
+            scanners[scanner_count].beacon_count++;
+        }
+        total_beacons += scanners[scanner_count].beacon_count;
+    }
+    scanner_count++;
+
+    map_possible_overlaps(scanners, scanner_count);
+    map_all_alignments(scanners, scanner_count);
+    int beacon_count = count_unique_beacons(scanners, scanner_count, total_beacons);
+
+    printf("There are %d beacons\n", beacon_count);
     
     free_data(scanners, scanner_count);
     fclose(input);
