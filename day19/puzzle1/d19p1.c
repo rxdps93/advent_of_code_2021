@@ -25,7 +25,6 @@ struct Matrix {
 };
 
 struct Scanner {
-    int name;
     int beacon_count;
     size_t capacity;
     Coords *beacons;
@@ -322,7 +321,6 @@ int main() {
             scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].x = x;
             scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].y = y;
             scanners[scanner_count].beacons[scanners[scanner_count].beacon_count].z = z;
-            scanners[scanner_count].name = scanner_count;
             scanners[scanner_count].beacon_count++;
         }
         total_beacons += scanners[scanner_count].beacon_count;
