@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <math.h>
 
-#define TEST 1
+#define TEST 0
 
 typedef struct Vector {
     int x;
@@ -11,40 +11,13 @@ typedef struct Vector {
     int z;
 } vector_t;
 
-typedef struct Cube {
-    int state;
-    vector_t pos;
-
-    int change[500];
-    int ins_cnt;
-} cube_t;
-
 typedef struct Instruction {
     int state;
+    int skip;
 
-    int x_min;
-    int x_max;
-    
-    int y_min;
-    int y_max;
-
-    int z_min;
-    int z_max;
+    vector_t min;
+    vector_t max;
 } ins_t;
-
-int vectors_match(vector_t a, vector_t b) {
-    return a.x == b.x && a.y == b.y && a.z == b.z;
-}
-
-int find_cube(cube_t *cubes, int size, vector_t pos) {
-    for (int i = 0; i < size; i++) {
-        if (vectors_match(cubes[i].pos, pos) && cubes[i].ins_cnt != -1) {
-            return i;
-        }
-    }
-
-    return -1;
-}
 
 int read_input(ins_t ins_set[500], FILE *input) {
     int ins_cnt = -1;
@@ -53,6 +26,7 @@ int read_input(ins_t ins_set[500], FILE *input) {
         fgetc(input);
         c = fgetc(input);
         ins_cnt++;
+        ins_set[ins_cnt].skip = 0;
         if (c == 'n') {
             ins_set[ins_cnt].state = 1;
             fgetc(input);
@@ -62,9 +36,9 @@ int read_input(ins_t ins_set[500], FILE *input) {
         }
 
     } while(fscanf(input, "x=%d..%d,y=%d..%d,z=%d..%d\n",
-            &ins_set[ins_cnt].x_min, &ins_set[ins_cnt].x_max,
-            &ins_set[ins_cnt].y_min, &ins_set[ins_cnt].y_max,
-            &ins_set[ins_cnt].z_min, &ins_set[ins_cnt].z_max) == 6);
+            &ins_set[ins_cnt].min.x, &ins_set[ins_cnt].max.x,
+            &ins_set[ins_cnt].min.y, &ins_set[ins_cnt].max.y,
+            &ins_set[ins_cnt].min.z, &ins_set[ins_cnt].max.z) == 6);
 
     return ins_cnt;
 }
@@ -86,63 +60,83 @@ int main() {
     vector_t max = { INT_MIN, INT_MIN, INT_MIN };
     for (int i = 0; i < ins_cnt; i++) {
 
+        if ((ins_set[i].max.x < -50 || ins_set[i].min.x > 50) ||
+            (ins_set[i].max.y < -50 || ins_set[i].min.y > 50) ||
+            (ins_set[i].max.z < -50 || ins_set[i].min.z > 50)) {
+
+                ins_set[i].skip = 1;
+                continue;
+        }
+
         // x min
-        if (ins_set[i].x_min < min.x) {
-            min.x = ins_set[i].x_min;
+        if (ins_set[i].min.x < min.x) {
+            min.x = ins_set[i].min.x;
         }
 
         // x max
-        if (ins_set[i].x_max > max.x) {
-            max.x = ins_set[i].x_max;
+        if (ins_set[i].max.x > max.x) {
+            max.x = ins_set[i].max.x;
         }
 
         // y min
-        if (ins_set[i].y_min < min.y) {
-            min.y = ins_set[i].y_min;
+        if (ins_set[i].min.y < min.y) {
+            min.y = ins_set[i].min.y;
         }
 
         // y max
-        if (ins_set[i].y_max > max.y) {
-            max.y = ins_set[i].y_max;
+        if (ins_set[i].max.y > max.y) {
+            max.y = ins_set[i].max.y;
         }
 
         // z min
-        if (ins_set[i].z_min < min.z) {
-            min.z = ins_set[i].z_min;
+        if (ins_set[i].min.z < min.z) {
+            min.z = ins_set[i].min.z;
         }
 
         // z max
-        if (ins_set[i].z_max > max.z) {
-            max.z = ins_set[i].z_max;
+        if (ins_set[i].max.z > max.z) {
+            max.z = ins_set[i].max.z;
         }
     }
-    int num_cubes = (abs(max.x - min.x) + 1) * (abs(max.y - min.y) + 1) * (abs(max.z - min.z) + 1);
 
-    cube_t cubes[num_cubes];
-    for (int i = 0; i < num_cubes; i++) {
-        cubes[i].ins_cnt = -1;
+    int set[(abs(max.x - min.x) + 1)][(abs(max.y - min.y) + 1)][(abs(max.z - min.z) + 1)];
+    for (int x = 0; x < (abs(max.x - min.x) + 1); x++) {
+        for (int y = 0; y < (abs(max.y - min.y) + 1); y++) {
+            for (int z = 0; z < (abs(max.z - min.z) + 1); z++) {
+                set[x][y][z] = 0;
+            }   
+        }
     }
 
-    int c;
-    vector_t pos;
+    int cube_count = 0;
     for (int i = 0; i < ins_cnt; i++) {
-        for (int x = ins_set[i].x_min; x <= ins_set[i].x_max; x++) {
-            for (int y = ins_set[i].y_min; y <= ins_set[i].y_max; y++) {
-                for (int z = ins_set[i].z_min; z <= ins_set[i].z_max; z++) {
-                    pos.x = x;
-                    pos.y = y;
-                    pos.z = z;
-                    int c = find_cube(cubes, num_cubes, pos);
-
-                    if (c == -1) {
-
+        printf("instruction #%d will flip cubes to %d...", i, ins_set[i].state);
+        if (ins_set[i].skip) {
+            printf("skipping\n");
+            continue;
+        }
+        printf("\n");
+        for (int x = ins_set[i].min.x; x <= ins_set[i].max.x; x++) {
+            if (x < -50 || x > 50) {
+                continue;
+            }
+            for (int y = ins_set[i].min.y; y <= ins_set[i].max.y; y++) {
+                if (y < -50 || y > 50) {
+                    continue;
+                }
+                for (int z = ins_set[i].min.z; z <= ins_set[i].max.z; z++) {
+                    if (z < -50 || z > 50) {
+                        continue;
                     }
 
-                    
+                    cube_count += (ins_set[i].state) - set[abs(x - min.x)][abs(y - min.y)][abs(z - min.z)];
+                    set[abs(x - min.x)][abs(y - min.y)][abs(z - min.z)] = ins_set[i].state;
                 }
             }
         }
     }
+
+    printf("There are %d cubes on\n", cube_count);
 
     return EXIT_SUCCESS;
 }
