@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-#define TEST 1
+#define TEST 0
 #define MIN(a, b) (a < b ? a : b)
 #define MAX(a, b) (a > b ? a : b)
 
@@ -26,7 +26,7 @@ typedef struct Instruction {
 } ins_t;
 
 u_int64_t vector_volume(vector_t min, vector_t max) {
-    return ((max.x - min.x) + 1) * ((max.y - min.y) + 1) * ((max.y - min.y) + 1);
+    return (u_int64_t)((max.x - min.x) + 1) * ((max.y - min.y) + 1) * ((max.z - min.z) + 1);
 }
 
 u_int64_t cuboid_volume(cuboid_t c) {
@@ -53,12 +53,18 @@ int cuboid_intersect(cuboid_t *i, cuboid_t c1, cuboid_t c2) {
 int read_input(ins_t ins_set[500], FILE *input) {
     int num = 0;
     char ins[4];
-    vector_t min, max;
-    while (fscanf(input, "%[^ ] x=%d..%d,y=%d..%d,z=%d..%d\n", ins, &min.x, &max.x, &min.y, &max.y, &min.z, &max.z) == 7) {
+    int x_min, y_min, z_min, x_max, y_max, z_max;
+    while (fscanf(input, "%[^ ] x=%d..%d,y=%d..%d,z=%d..%d\n", ins, &x_min, &x_max, &y_min, &y_max, &z_min, &z_max) == 7) {
 
         ins_set[num].state = (ins[1] == 'n');
-        ins_set[num].min = min;
-        ins_set[num].max = max;
+
+        ins_set[num].min.x = x_min;
+        ins_set[num].min.y = y_min;
+        ins_set[num].min.z = z_min;
+        
+        ins_set[num].max.x = x_max;
+        ins_set[num].max.y = y_max;
+        ins_set[num].max.z = z_max;
         num++;
     }
 
@@ -87,7 +93,6 @@ int main() {
     cuboid_t *to_add = calloc(add_cap, sizeof(cuboid_t));
     cuboid_t *tmp;
     for (int i = 0; i < ins_cnt; i++) {
-        printf("instruction #%d: size: %llu, cap: %llu...\n", i + 1, reactor_size, reactor_capacity);
         cuboid_t c = { ins_set[i].state, ins_set[i].min, ins_set[i].max };
         if (add_size > 0) {
             add_size = 0;
@@ -108,7 +113,6 @@ int main() {
             to_add[add_size++] = c;
         }
 
-        printf("\tintersect...\n");
         for (uint64_t rc = 0; rc < reactor_size; rc++) {
             cuboid_t intersect;
             int inter = cuboid_intersect(&intersect, c, reactor[rc]);
@@ -131,7 +135,6 @@ int main() {
             }
         }
 
-        printf("\tadd to reactor: %llu | %llu\n", reactor_size, reactor_capacity);
         for (uint64_t a = 0; a < add_size; a++) {
             reactor[reactor_size++] = to_add[a];
 
@@ -149,7 +152,6 @@ int main() {
         }
     }
     free(to_add);
-    printf("done\n");
 
     uint64_t cubes = 0;
     for (uint64_t i = 0; i < reactor_size; i++) {
