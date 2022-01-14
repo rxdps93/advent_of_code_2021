@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <math.h>
 
 #define TEST 1
 #define MIN(a, b) (a < b ? a : b)
@@ -86,13 +85,23 @@ int main() {
     uint64_t add_size = 0;
     uint64_t add_cap = 1024;
     cuboid_t *to_add = calloc(add_cap, sizeof(cuboid_t));
+    cuboid_t *tmp;
     for (int i = 0; i < ins_cnt; i++) {
         printf("instruction #%d: size: %llu, cap: %llu...\n", i + 1, reactor_size, reactor_capacity);
         cuboid_t c = { ins_set[i].state, ins_set[i].min, ins_set[i].max };
         if (add_size > 0) {
             add_size = 0;
             add_cap = 1024;
-            to_add = realloc(to_add, add_cap * sizeof(cuboid_t));
+            tmp = (cuboid_t *)realloc(to_add, add_cap * sizeof(cuboid_t));
+
+            if (!tmp) {
+                free(reactor);
+                free(to_add);
+                printf("Failed realloc!\n");
+                exit(EXIT_FAILURE);
+            }
+
+            to_add = tmp;
         }
 
         if (ins_set[i].state) {
@@ -104,12 +113,12 @@ int main() {
             cuboid_t intersect;
             int inter = cuboid_intersect(&intersect, c, reactor[rc]);
             if (inter) {
-                intersect.state = reactor[rc].state; // should this be negative?
+                intersect.state = -reactor[rc].state;
                 to_add[add_size++] = intersect;
 
                 if (add_size == add_cap) {
-                    reactor_capacity *= 2;
-                    cuboid_t *tmp = (cuboid_t *)realloc(to_add, add_cap * sizeof(cuboid_t));
+                    add_cap *= 2;
+                    tmp = (cuboid_t *)realloc(to_add, add_cap * sizeof(cuboid_t));
                     if (!tmp) {
                         free(reactor);
                         free(to_add);
@@ -122,13 +131,13 @@ int main() {
             }
         }
 
-        printf("\tadd to reactor\n");
+        printf("\tadd to reactor: %llu | %llu\n", reactor_size, reactor_capacity);
         for (uint64_t a = 0; a < add_size; a++) {
             reactor[reactor_size++] = to_add[a];
 
             if (reactor_size == reactor_capacity) {
-                reactor_capacity++;
-                cuboid_t *tmp = (cuboid_t *)realloc(reactor, reactor_capacity * sizeof(cuboid_t));
+                reactor_capacity *= 2;
+                tmp = (cuboid_t *)realloc(reactor, reactor_capacity * sizeof(cuboid_t));
                 if (!tmp) {
                     printf("Reactor realloc failure\n");
                     free(reactor);
@@ -140,11 +149,14 @@ int main() {
         }
     }
     free(to_add);
+    printf("done\n");
 
     uint64_t cubes = 0;
     for (uint64_t i = 0; i < reactor_size; i++) {
         cubes += reactor[i].state * cuboid_volume(reactor[i]);
     }
+
+    printf("There are %llu cubes on.\n", cubes);
 
     free(reactor);
     return EXIT_SUCCESS;
