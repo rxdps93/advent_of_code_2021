@@ -79,7 +79,7 @@ int main() {
     fclose(input);
 
     uint64_t reactor_size = 0;
-    uint64_t reactor_capacity = INT_MAX;
+    uint64_t reactor_capacity = 1024;
     cuboid_t *reactor = calloc(reactor_capacity, sizeof(cuboid_t));
 
     uint64_t add_size = 0;
