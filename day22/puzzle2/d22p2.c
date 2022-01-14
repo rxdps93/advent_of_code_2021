@@ -41,7 +41,7 @@ int cuboid_intersect(cuboid_t *i, cuboid_t c1, cuboid_t c2) {
     cuboid_t tmp = { 0, { MAX(c1.min.x, c2.min.x), MAX(c1.min.y, c2.min.y), MAX(c1.min.z, c2.min.z) },
                      { MIN(c1.max.x, c2.max.x), MIN(c1.max.y, c2.max.y), MIN(c1.max.z, c2.max.z) } };
 
-    if ((tmp.min.x > tmp.max.x) || (tmp.min.x > tmp.max.x) || (tmp.min.x > tmp.max.x)) {
+    if ((tmp.min.x > tmp.max.x) || (tmp.min.y > tmp.max.y) || (tmp.min.z > tmp.max.z)) {
         i = NULL;
         return 0;
     } else {
