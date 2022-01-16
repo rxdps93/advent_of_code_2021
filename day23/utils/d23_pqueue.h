@@ -1,22 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-typedef enum {
-    AMBER = 1,
-    BRONZE = 10,
-    COPPER = 100,
-    DESERT = 1000
-} amphitype_t;
-
-typedef struct Amphipod {
-    amphitype_t type;
-    int moves;
-} amphipod_t;
-
-typedef struct Burrow {
-    int energy;
-    amphipod_t amphis[4];
-} burrow_t;
+#include "d23_structs.h"
 
 typedef struct BurrowQueue {
     burrow_t *items;

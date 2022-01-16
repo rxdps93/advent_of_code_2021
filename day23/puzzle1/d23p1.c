@@ -1,8 +1,53 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/day23.h"
+#include "../utils/d23_pqueue.h"
 
 #define TEST 1
+
+void parse_input(FILE *input) {
+
+    burrow_t state;
+
+    char c;
+    char str[50];
+    int count = 0;
+    while (fscanf(input, "%[^A,B,C,D]s", str) == 1) {
+        c = fgetc(input);
+
+        amphipod_t amphi;
+        switch (c) {
+            case 'A':
+                amphi.type = AMBER;
+                break;
+            case 'B':
+                amphi.type = BRONZE;
+                break;
+            case 'C':
+                amphi.type = COPPER;
+                break;
+            case 'D':
+                amphi.type = DESERT;
+                break;
+        }
+
+        if (c == 'A' || c == 'B' || c == 'C' || c == 'D') {
+
+        }
+
+        printf("%c", c);
+        count++;
+
+        if (count == 4 || count == 8) {
+            printf("\n");
+
+            if (count == 8) {
+                break;
+            }
+        }
+    }
+
+    // return state;
+}
 
 int main() {
 
@@ -13,25 +58,9 @@ int main() {
         printf("Unable to open file");
         exit(EXIT_FAILURE);
     }
+    parse_input(input);
+    // burrow_t state = parse_input(input);
 
-    burrow_queue_t pq;
-    queue_init(&pq, 10);
-
-    burrow_t b_arr[10] = { { 7 }, { 12 }, { -3 }, { 42 }, { 0 }, { 9 }, { -4 }, { 15293 }, { 2 }, { 1 } };
-    for (int i = 0; i < 10; i++) {
-        queue_add(&pq, b_arr[i]);
-    }
-
-    burrow_t b = { 14 };
-    queue_add(&pq, b);
-
-    queue_remove(&pq, &b);
-    printf("I removed %d\n", b.energy);
-    printf("New capacity is %lu\n", pq.capacity);
-
-    print_queue(&pq);
-
-    queue_free(&pq);
     fclose(input);
     return EXIT_SUCCESS;
 }
