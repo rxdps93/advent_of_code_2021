@@ -1,3 +1,5 @@
+#include <string.h>
+
 typedef struct Amphipod amphipod_t;
 typedef struct Space space_t;
 typedef struct Hallway hall_t;
@@ -11,6 +13,11 @@ typedef enum {
     DESERT = 1000
 } amphitype_t;
 
+typedef enum {
+    EMPTY,
+    OCCUPIED
+} status_t;
+
 struct Amphipod {
     amphitype_t type;
     int moves;
@@ -19,6 +26,7 @@ struct Amphipod {
 
 struct Space {
     amphipod_t *occupant;
+    status_t status;
 
     space_t *up;
     space_t *down;
@@ -72,12 +80,11 @@ void print_rooms(burrow_t *burrow) {
     }
 }
 
-char **burrow_to_string(burrow_t *burrow) {
-    char out[5][14];
+void burrow_to_string(burrow_t *burrow, char out[5][14]) {
     for (int i = 1; i < 12; i++) {
         out[0][i] = '#';
         out[4][i] = ' ';
-        if (burrow->hallway.spots[i - 1].occupant == NULL) {
+        if (burrow->hallway.spots[i - 1].status == EMPTY) {
             out[1][i] = '.';
         } else {
             out[1][i] = type_char(burrow->hallway.spots[i - 1].occupant->type);
@@ -87,13 +94,13 @@ char **burrow_to_string(burrow_t *burrow) {
             out[2][i] = '#';
             out[3][i] = ' ';
         } else {
-            if (burrow->hallway.spots[i - 1].down->occupant == NULL) {
+            if (burrow->hallway.spots[i - 1].down->status == EMPTY) {
                 out[2][i] = '.';
             } else {
                 out[2][i] = type_char(burrow->hallway.spots[i - 1].down->occupant->type);
             }
 
-            if (burrow->hallway.spots[i - 1].down->down->occupant == NULL) {
+            if (burrow->hallway.spots[i - 1].down->down->status == EMPTY) {
                 out[3][i] = '.';
             } else {
                 out[3][i] = type_char(burrow->hallway.spots[i - 1].down->down->occupant->type);
@@ -104,12 +111,6 @@ char **burrow_to_string(burrow_t *burrow) {
         }
     }
 
-    return out;
-}
-
-void print_burrow(burrow_t *burrow) {
-    char out[5][14] = burrow_to_string(burrow);
-
     for (int i = 0; i < 5; i++) {
         out[i][13] = '\0';
         if (i < 3) {
@@ -118,7 +119,28 @@ void print_burrow(burrow_t *burrow) {
         } else {
             out[i][0] = ' ';
             out[i][12] = ' ';
-        }   
+        }
     }
-  
+}
+
+void print_burrow(burrow_t *burrow) {
+    char out[5][14];
+    burrow_to_string(burrow, out);
+    for (int i = 0; i < 5; i++) {
+        printf("%s\n", out[i]);
+    }
+}
+
+int burrows_are_equal(burrow_t *a, burrow_t *b) {
+    char str_a[5][14], str_b[5][14];
+    burrow_to_string(a, str_a);
+    burrow_to_string(b, str_b);
+
+    for (int i = 0; i < 5; i++) {
+        if (strcmp(str_a[i], str_b[i]) != 0) {
+            return 0;
+        }
+    }
+
+    return a->energy == b->energy;
 }
