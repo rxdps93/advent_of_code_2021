@@ -72,7 +72,7 @@ void print_rooms(burrow_t *burrow) {
     }
 }
 
-void print_burrow(burrow_t *burrow) {
+char **burrow_to_string(burrow_t *burrow) {
     char out[5][14];
     for (int i = 1; i < 12; i++) {
         out[0][i] = '#';
@@ -104,6 +104,12 @@ void print_burrow(burrow_t *burrow) {
         }
     }
 
+    return out;
+}
+
+void print_burrow(burrow_t *burrow) {
+    char out[5][14] = burrow_to_string(burrow);
+
     for (int i = 0; i < 5; i++) {
         out[i][13] = '\0';
         if (i < 3) {
@@ -112,7 +118,7 @@ void print_burrow(burrow_t *burrow) {
         } else {
             out[i][0] = ' ';
             out[i][12] = ' ';
-        }
-        printf("%s\n", out[i]);
+        }   
     }
+  
 }

@@ -58,6 +58,17 @@ void queue_add(burrow_queue_t *q, burrow_t add) {
     }
 }
 
+int queue_peek(burrow_queue_t *q, burrow_t *dst) {
+    if (queue_is_empty(q)) {
+        printf("Queue empty; cannot peek\n");
+        dst = NULL;
+        return 0;
+    } else {
+        *dst = q->items[q->head];
+        return 1;
+    }
+}
+
 int queue_remove(burrow_queue_t *q, burrow_t *dst) {
 
     if (queue_is_empty(q)) {

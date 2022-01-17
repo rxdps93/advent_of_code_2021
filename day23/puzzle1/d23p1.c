@@ -30,14 +30,34 @@ int is_organized(burrow_t *state) {
     return 1;
 }
 
-void organize_burrow(burrow_t state) {
+// int is_visited(burrow_t *visited, int visit_num, burrow_t state) {
+//     for (int i = 0; i < visit_num; i++) {
 
-    int visit_num = 0;
-    int visit_cap = 1024;
-    burrow_t *visited = (burrow_t *)malloc(visit_cap * sizeof(burrow_t));
+//     }
+// }
+
+// int organize_burrow(burrow_t state) {
+
+//     int visit_num = 0;
+//     int visit_cap = 1024;
+//     burrow_t *visited = (burrow_t *)malloc(visit_cap * sizeof(burrow_t));
+
+//     burrow_queue_t pq;
+//     queue_init(&pq, 1024);
+//     queue_add(&pq, state);
+
+//     while (!queue_is_empty(&pq)) {
+//         burrow_t current;
+//         queue_remove(&pq, &current);
+
+//         if (is_organized(&current)) {
+//             free(visited);
+//             return current.energy;
+//         }
 
 
-}
+//     }
+// }
 
 burrow_t parse_input(FILE *input) {
 
