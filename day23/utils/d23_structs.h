@@ -22,6 +22,9 @@ struct Amphipod {
     amphitype_t type;
     int moves;
     space_t *space;
+    int hall_spot;
+    int room_num;
+    int room_loc;
 };
 
 struct Space {

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "d23_structs.h"
+// #include "d23_structs.h"
+#include "d23_utils.h"
 
 typedef struct BurrowQueue {
     burrow_t *items;
