@@ -62,6 +62,65 @@ int is_reachable(space_t *dest, space_t *src) {
     return 1;
 }
 
+int path_room_to_hall(space_t *dst, int dst_index, space_t *src, burrow_t *state) {
+    if (dst->status == OCCUPIED || dst==src) {
+        return 0;
+    }
+
+    int room_num = -1;
+    for (int r = 0; r < 4; r++) {
+        if (&state->rooms[r].top == src || &state->rooms[r].bottom == src) {
+            room_num = r;
+        }
+    }
+
+    if (room_num == -1) {
+        printf("room could not be determined\n");
+        return 0;
+    }
+
+    int i = -1;
+    int dist = 0;
+    space_t current = *src;
+    while (i != dst_index) {
+        if (current.up != NULL) {
+            current = *current.up;
+            dist++;
+        } else { // we cannot go up therefore we are in the hall
+            if (current.down != NULL && i == -1) {
+                // Room 0 leads to hall index 2
+                // Room 1 leads to hall index 4
+                // Room 2 leads to hall index 6
+                // Room 3 leads to hall index 8
+                i = (room_num + 1) * 2;
+            }
+
+            if (i > dst_index) {
+                // move to the left
+                current = *current.left;
+                i--;
+                dist++;
+            } else if (i < dst_index) {
+                // move to the right
+                current = *current.right;
+                i++;
+                dist++;
+            }
+        }
+
+        if (current.status == OCCUPIED) {
+            dist = 0;
+            break;
+        }
+    }
+
+    return dist;
+}
+
+int path_hall_to_room() {
+    return 0;
+}
+
 int organize_burrow(burrow_t state) {
 
     int visit_num = 0;
@@ -92,7 +151,10 @@ int organize_burrow(burrow_t state) {
                         // move from room to hallway
                         for (int h = 0; h < 11; h++) {
                             if (new_state.hallway.spots[h].status == EMPTY && new_state.hallway.spots[h].down == NULL) {
-
+                                dist = path_room_to_hall(&new_state.hallway.spots[h], h, new_state.amphis[a].space, &new_state);
+                                if (dist > 0) {
+                                    // TODO: do the move
+                                }
                             }
                         }
                     } else if (new_state.amphis[a].moves == 1) {
@@ -100,8 +162,17 @@ int organize_burrow(burrow_t state) {
                         for (int r = 0; r < 4; r++) {
                             if (new_state.rooms[r].type == new_state.amphis[a].type) {
                                 if (is_room_available(new_state.rooms[r])) {
-                                    // go to the bottom spot if available
-                                    // otherwise go to the top spot
+                                    if (new_state.rooms[r].bottom.status == EMPTY) {
+                                        dist = path_hall_to_room();
+                                        if (dist > 0) {
+                                            // TODO: do the move
+                                        }
+                                    } else {
+                                        dist = path_hall_to_room();
+                                        if (dist > 0) {
+                                            // TODO: do the move
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -110,6 +181,7 @@ int organize_burrow(burrow_t state) {
             }
         }
     }
+    return 0;
 }
 
 void map_burrow(burrow_t *burrow) {
@@ -210,6 +282,12 @@ int main() {
 
     print_rooms(&state);
     print_burrow(&state);
+
+    int dist = 0;
+    for (int i = 0; i < 11; i++) {
+        dist = path_room_to_hall(&state.hallway.spots[i], i, &state.rooms[0].top, &state);
+        printf("That took %d steps\n", dist);
+    }
 
     fclose(input);
     return EXIT_SUCCESS;
