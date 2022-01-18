@@ -53,15 +53,6 @@ int is_room_available(room_t room) {
         (room.bottom.status == OCCUPIED && room.bottom.occupant->type == room.type);
 }
 
-int is_reachable(space_t *dest, space_t *src) {
-    if (dest->status == OCCUPIED || dest==src) {
-        return 0;
-    }
-
-    // TODO: the rest of it; return number of steps
-    return 1;
-}
-
 int path_room_to_hall(space_t *dst, int dst_index, space_t *src, burrow_t *state) {
     if (dst->status == OCCUPIED || dst==src) {
         return 0;
@@ -117,8 +108,51 @@ int path_room_to_hall(space_t *dst, int dst_index, space_t *src, burrow_t *state
     return dist;
 }
 
-int path_hall_to_room() {
-    return 0;
+int path_hall_to_room(space_t *dst, int room_num, space_t *src, burrow_t *state) {
+    if (dst->status == OCCUPIED || dst == src) {
+        return 0;
+    }
+
+    int hall_index = -1;
+    for (int h = 0; h < 11; h++) {
+        if (&state->hallway.spots[h] == src) {
+            hall_index = h;
+            break;
+        }
+    }
+
+    if (hall_index == -1) {
+        printf("\thall index could not be determined\n");
+        return 0;
+    }
+
+    // path to room entrance
+    int dist = 0;
+    int i = hall_index;
+    while (i != (2 * (room_num + 1))) {
+        if (i > (2 * (room_num + 1))) {
+            i--;
+            dist++;
+        } else {
+            i++;
+            dist++;
+        }
+
+        if (state->hallway.spots[i].status == OCCUPIED && i != hall_index) {
+            return 0;
+        }
+    }
+
+    if (&state->rooms[room_num].top == dst) {
+        dist++;
+    } else if (&state->rooms[room_num].bottom == dst && state->rooms[room_num].top.status != OCCUPIED) {
+        dist += 2;
+    } else {
+        printf("\tsomething went wrong\n");
+        return 0;
+    }
+
+    return dist;
 }
 
 int organize_burrow(burrow_t state) {
@@ -163,12 +197,12 @@ int organize_burrow(burrow_t state) {
                             if (new_state.rooms[r].type == new_state.amphis[a].type) {
                                 if (is_room_available(new_state.rooms[r])) {
                                     if (new_state.rooms[r].bottom.status == EMPTY) {
-                                        dist = path_hall_to_room();
+                                        dist = path_hall_to_room(&new_state.rooms[r].bottom, r, new_state.amphis[a].space, &new_state);
                                         if (dist > 0) {
                                             // TODO: do the move
                                         }
                                     } else {
-                                        dist = path_hall_to_room();
+                                        dist = path_hall_to_room(&new_state.rooms[r].top, r, new_state.amphis[a].space, &new_state);
                                         if (dist > 0) {
                                             // TODO: do the move
                                         }
@@ -283,9 +317,25 @@ int main() {
     print_rooms(&state);
     print_burrow(&state);
 
+    // testing room to hall pathing
+    printf("Testing room to hall pathing\n");
     int dist = 0;
     for (int i = 0; i < 11; i++) {
         dist = path_room_to_hall(&state.hallway.spots[i], i, &state.rooms[0].top, &state);
+        printf("That took %d steps\n", dist);
+    }
+
+    dist = 0;
+    printf("\nTesting hall to room pathing\n");
+    for (int i = 0; i < 11; i++) {
+        if (i == 2 || i == 4 || i == 6 || i == 8) {
+            continue;
+        }
+        state.amphis[1].space->status = EMPTY;
+        state.amphis[1].space = &state.hallway.spots[i];
+        state.hallway.spots[i].status = OCCUPIED;
+
+        dist = path_hall_to_room(&state.rooms[1].top, 1, &state.hallway.spots[i], &state);
         printf("That took %d steps\n", dist);
     }
 
