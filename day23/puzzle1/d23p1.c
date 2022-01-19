@@ -11,10 +11,10 @@ int is_organized(burrow_t *state) {
         }
     }
 
-    return (state->layout[ROW_RM_TOP][COL_ROOM_A] == state->layout[ROW_RM_BTM][COL_ROOM_A] == AMBER) &&
-    (state->layout[ROW_RM_TOP][COL_ROOM_B] == state->layout[ROW_RM_BTM][COL_ROOM_B] == BRONZE) &&
-    (state->layout[ROW_RM_TOP][COL_ROOM_C] == state->layout[ROW_RM_BTM][COL_ROOM_C] == COPPER) &&
-    (state->layout[ROW_RM_TOP][COL_ROOM_D] == state->layout[ROW_RM_BTM][COL_ROOM_D] == DESERT);
+    return ((state->layout[ROW_RM_TOP][COL_ROOM_A] == state->layout[ROW_RM_BTM][COL_ROOM_A]) && (state->layout[ROW_RM_TOP][COL_ROOM_A] == AMBER)) &&
+    ((state->layout[ROW_RM_TOP][COL_ROOM_B] == state->layout[ROW_RM_BTM][COL_ROOM_B]) && (state->layout[ROW_RM_TOP][COL_ROOM_B] == BRONZE)) &&
+    ((state->layout[ROW_RM_TOP][COL_ROOM_C] == state->layout[ROW_RM_BTM][COL_ROOM_C]) && (state->layout[ROW_RM_TOP][COL_ROOM_C] == COPPER)) &&
+    ((state->layout[ROW_RM_TOP][COL_ROOM_D] == state->layout[ROW_RM_BTM][COL_ROOM_D]) && (state->layout[ROW_RM_TOP][COL_ROOM_D] == DESERT));
 }
 
 int is_visited(burrow_t *visited, int visit_num, burrow_t state) {
@@ -42,6 +42,40 @@ int room_is_eligible(int from, int room_num, burrow_t state) {
     }
 
     return 0;
+}
+
+int path_move(move_t move, const burrow_t state) {
+    int dist = 0;
+    if (move.move_type == ROOM_TO_HALL) {
+
+        const int hall_index = move.to;
+        const int from_col = move.from % 10;
+        const int from_row = move.from / 10;
+
+        // path to the entrance to the room
+        int i = hall_index;
+        while (i != from_col) {
+            if (state.layout[i] != EMPTY) {
+                return 0;
+            }
+
+            if (i > from_col) {
+                i--;
+                dist++;
+            } else {
+                i++;
+                dist++;
+            }
+        }
+
+        // now i should == from_col, add 1 to move from top row, 2 to move from bottom row
+        dist += from_row;
+
+    } else {
+
+    }
+
+    return dist;
 }
 
 int organize_burrow(burrow_t state) {
@@ -77,13 +111,15 @@ int organize_burrow(burrow_t state) {
                     // see what we can move to this space from a room
                     for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
                         // check if room is finished
-                        if (state.layout[ROW_RM_TOP][i] == state.layout[ROW_RM_BTM] == get_room_type((i / 2) - 1)) {
+                        if ((state.layout[ROW_RM_TOP][i] == state.layout[ROW_RM_BTM][i]) && (state.layout[ROW_RM_TOP][i] == get_room_type((i / 2) - 1))) {
                             continue;
                         }
 
                         if (state.layout[ROW_RM_TOP][i] != EMPTY) {
                             // try to move from top
-                        } else if (state.layout[ROW_RM_BTM][i] != EMPTY) {
+                            move_t move = { ROOM_TO_HALL, (ROW_RM_TOP * 10) + i, h };
+                            path_move(move, state);
+                        } else if (state.layout[ROW_RM_BTM][i] != EMPTY && state.layout[ROW_RM_BTM][i] != get_room_type((i / 2) - 1)) {
                             // try to move from bottom
                         }
                     }
@@ -147,6 +183,11 @@ int main() {
     burrow_t state = parse_input(input);
     fclose(input);
     print_burrow(&state);
+
+    // test moving from room 1 top to hall 0. distance should be 3
+    move_t test_move = { ROOM_TO_HALL, (ROW_RM_TOP * 10) + COL_ROOM_A, 0 };
+    int test_dist = path_move(test_move, state);
+    printf("the test distance is %d\n", test_dist);
 
     return EXIT_SUCCESS;
 }
