@@ -46,6 +46,7 @@ int room_is_eligible(int from, int room_num, burrow_t state) {
 
 int path_move(move_t move, const burrow_t state) {
     int dist = 0;
+    // organize_burrow should make sure the room is good, this just counts distance and makes sure hall is clear
     if (move.move_type == ROOM_TO_HALL) {
 
         const int hall_index = move.to;
@@ -55,7 +56,7 @@ int path_move(move_t move, const burrow_t state) {
         // path to the entrance to the room
         int i = hall_index;
         while (i != from_col) {
-            if (state.layout[i] != EMPTY) {
+            if (state.layout[ROW_HALL][i] != EMPTY) {
                 return 0;
             }
 
@@ -73,6 +74,26 @@ int path_move(move_t move, const burrow_t state) {
 
     } else {
 
+        const int from_hall = move.from;
+        const int to_col = move.to % 10;
+        const int to_row = move.to / 10;
+
+        int i = from_hall;
+        while (i != to_col) {
+            if (state.layout[ROW_HALL][i] != EMPTY) {
+                return 0;
+            }
+
+            if (i > to_col) {
+                i--;
+                dist++;
+            } else {
+                i++;
+                dist++;
+            }
+        }
+
+        dist += to_row;
     }
 
     return dist;
@@ -184,10 +205,25 @@ int main() {
     fclose(input);
     print_burrow(&state);
 
-    // test moving from room 1 top to hall 0. distance should be 3
-    move_t test_move = { ROOM_TO_HALL, (ROW_RM_TOP * 10) + COL_ROOM_A, 0 };
-    int test_dist = path_move(test_move, state);
-    printf("the test distance is %d\n", test_dist);
+
+    // pathing tests
+    int test_dist;
+    for (int h = 0; h < NCOL; h++) {
+        if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
+            continue;
+        }
+        for (int r = COL_ROOM_A; r <= COL_ROOM_D; r += 2) {
+            for (int s = ROW_RM_TOP; s <= ROW_RM_BTM; s++) {
+                // move_t test_move = { ROOM_TO_HALL, (s * 10) + r, h };
+                // test_dist = path_move(test_move, state);
+                // printf("Moving from the %s of room %d to hallway spot %d: %d\n", s == 1 ? "top" : "bottom",  (r / 2) - 1, h, test_dist);
+
+                move_t test_move = { HALL_TO_ROOM, h, (s * 10) + r };
+                test_dist = path_move(test_move, state);
+                printf("Moving from hallway spot %d to the %s of room %d: %d\n", h, s == 1 ? "top" : "bottom", (r / 2) - 1, test_dist);
+            }
+        }
+    }
 
     return EXIT_SUCCESS;
 }
