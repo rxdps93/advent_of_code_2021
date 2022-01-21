@@ -5,22 +5,18 @@
 #define TEST 1
 
 int is_organized(burrow_t *state) {
-    for (int h = 0; h < NCOL; h++) {
-        if (state->layout[ROW_HALL][h] != EMPTY) {
-            return 0;
-        }
-    }
-
-    return ((state->layout[ROW_RM_TOP][COL_ROOM_A] == state->layout[ROW_RM_BTM][COL_ROOM_A]) && (state->layout[ROW_RM_TOP][COL_ROOM_A] == AMBER)) &&
-    ((state->layout[ROW_RM_TOP][COL_ROOM_B] == state->layout[ROW_RM_BTM][COL_ROOM_B]) && (state->layout[ROW_RM_TOP][COL_ROOM_B] == BRONZE)) &&
-    ((state->layout[ROW_RM_TOP][COL_ROOM_C] == state->layout[ROW_RM_BTM][COL_ROOM_C]) && (state->layout[ROW_RM_TOP][COL_ROOM_C] == COPPER)) &&
-    ((state->layout[ROW_RM_TOP][COL_ROOM_D] == state->layout[ROW_RM_BTM][COL_ROOM_D]) && (state->layout[ROW_RM_TOP][COL_ROOM_D] == DESERT));
+    burrow_t done = get_finished_burrow();
+    return layouts_equal(state, &done);
 }
 
 int is_visited(burrow_t *visited, int visit_num, burrow_t state) {
     for (int i = 0; i < visit_num; i++) {
         if (layouts_equal(&visited[i], &state)) {
-            return 1;
+            if (visited[i].energy >= state.energy) {
+                return 0;
+            } else {
+                return 1;
+            }
         }
     }
 
@@ -28,7 +24,7 @@ int is_visited(burrow_t *visited, int visit_num, burrow_t state) {
 }
 
 int room_is_eligible(int from, int room_num, burrow_t state) {
-    if (state.layout[ROW_HALL][from] != get_room_type(room_num)) {
+    if (state.layout[ROW_HALL][from] != get_room_type_from_num(room_num)) {
         return 0;
     }
 
@@ -37,11 +33,26 @@ int room_is_eligible(int from, int room_num, burrow_t state) {
         if (state.layout[ROW_RM_BTM][col] == EMPTY) {
             return 1;
         } else {
-            return state.layout[ROW_RM_BTM][col] == get_room_type(room_num);
+            return state.layout[ROW_RM_BTM][col] == get_room_type_from_num(room_num);
         }
     }
 
     return 0;
+}
+
+burrow_t execute_move(move_t move, burrow_t state, int dist) {
+
+    burrow_t new_state = state;
+    if (move.move_type == ROOM_TO_HALL) {
+        new_state.layout[ROW_HALL][move.hall] = new_state.layout[move.room_row][move.room_col];
+        new_state.layout[move.room_row][move.room_col] = EMPTY;
+        new_state.energy += dist * new_state.layout[ROW_HALL][move.hall];
+    } else {
+        new_state.layout[move.room_row][move.room_col] = new_state.layout[ROW_HALL][move.hall];
+        new_state.layout[ROW_HALL][move.hall] = EMPTY;
+        new_state.energy += dist * new_state.layout[move.room_row][move.room_col];
+    }
+    return new_state;
 }
 
 int path_move(move_t move, const burrow_t state) {
@@ -49,18 +60,14 @@ int path_move(move_t move, const burrow_t state) {
     // organize_burrow should make sure the room is good, this just counts distance and makes sure hall is clear
     if (move.move_type == ROOM_TO_HALL) {
 
-        const int hall_index = move.to;
-        const int from_col = move.from % 10;
-        const int from_row = move.from / 10;
-
         // path to the entrance to the room
-        int i = hall_index;
-        while (i != from_col) {
-            if (state.layout[ROW_HALL][i] != EMPTY) {
+        int i = move.hall;
+        while (i != move.room_col) {
+            if (state.layout[ROW_HALL][i] != EMPTY && i != move.hall) {
                 return 0;
             }
 
-            if (i > from_col) {
+            if (i > move.room_col) {
                 i--;
                 dist++;
             } else {
@@ -70,21 +77,17 @@ int path_move(move_t move, const burrow_t state) {
         }
 
         // now i should == from_col, add 1 to move from top row, 2 to move from bottom row
-        dist += from_row;
+        dist += move.room_row;
 
     } else {
 
-        const int from_hall = move.from;
-        const int to_col = move.to % 10;
-        const int to_row = move.to / 10;
-
-        int i = from_hall;
-        while (i != to_col) {
-            if (state.layout[ROW_HALL][i] != EMPTY) {
+        int i = move.hall;
+        while (i != move.room_col) {
+            if (state.layout[ROW_HALL][i] != EMPTY && i != move.hall) {
                 return 0;
             }
 
-            if (i > to_col) {
+            if (i > move.room_col) {
                 i--;
                 dist++;
             } else {
@@ -93,7 +96,7 @@ int path_move(move_t move, const burrow_t state) {
             }
         }
 
-        dist += to_row;
+        dist += move.room_row;
     }
 
     return dist;
@@ -114,34 +117,52 @@ int organize_burrow(burrow_t state) {
         burrow_t current;
         queue_remove(&pq, &current);
 
+        print_burrow(&current);
+
         if (is_organized(&current)) {
             energy = current.energy;
             break;
         }
 
+        // possible optimization: add all possible hall-to-room moves to queue.
+        // if at least1 is added, don't bother with room-to-hall
         if (!is_visited(visited, visit_num, current)) {
-            int move_num = 0;
-            move_t moves[1024];
+
+            visited[visit_num++] = current;
+            if (visit_num >= visit_cap) {
+                visit_cap *= 2;
+                visited = (burrow_t *)realloc(visited, visit_cap * sizeof(burrow_t));
+            }
             // find all possible moves for the current state
             for (int h = 0; h < NCOL; h++) {
                 if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
                     continue;
                 }
 
-                if (state.layout[ROW_HALL][h] == EMPTY) {
+                if (current.layout[ROW_HALL][h] == EMPTY) {
                     // see what we can move to this space from a room
                     for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
                         // check if room is finished
-                        if ((state.layout[ROW_RM_TOP][i] == state.layout[ROW_RM_BTM][i]) && (state.layout[ROW_RM_TOP][i] == get_room_type((i / 2) - 1))) {
+                        if ((current.layout[ROW_RM_TOP][i] == current.layout[ROW_RM_BTM][i]) && (current.layout[ROW_RM_TOP][i] == get_room_type_from_num((i / 2) - 1))) {
                             continue;
                         }
 
-                        if (state.layout[ROW_RM_TOP][i] != EMPTY) {
+                        if (current.layout[ROW_RM_TOP][i] != EMPTY) {
                             // try to move from top
-                            move_t move = { ROOM_TO_HALL, (ROW_RM_TOP * 10) + i, h };
-                            path_move(move, state);
-                        } else if (state.layout[ROW_RM_BTM][i] != EMPTY && state.layout[ROW_RM_BTM][i] != get_room_type((i / 2) - 1)) {
+                            move_t move = { ROOM_TO_HALL, h, ROW_RM_TOP, i };
+                            int dist = path_move(move, current);
+                            if (dist > 0) {
+                                burrow_t new_state = execute_move(move, current, dist);
+                                queue_add(&pq, new_state);
+                            }
+                        } else if (current.layout[ROW_RM_BTM][i] != EMPTY && current.layout[ROW_RM_BTM][i] != get_room_type_from_num((i / 2) - 1)) {
                             // try to move from bottom
+                            move_t move = { ROOM_TO_HALL, h, ROW_RM_BTM, i };
+                            int dist = path_move(move, current);
+                            if (dist > 0) {
+                                burrow_t new_state = execute_move(move, current, dist);
+                                queue_add(&pq, new_state);
+                            }
                         }
                     }
                 } else {
@@ -151,14 +172,26 @@ int organize_burrow(burrow_t state) {
                         // eligible if room type matches amphipod type
                         // plus the room is either fully empty OR
                         // the top spot is empty with the bottom filled by a matching type
-                        if (!room_is_eligible(h, (i / 2) - 1, state)) {
+                        if (!room_is_eligible(h, (i / 2) - 1, current)) {
                             continue;
                         }
 
-                        if (state.layout[ROW_RM_TOP][i] != EMPTY) {
+                        if (current.layout[ROW_RM_TOP][i] != EMPTY) {
                             // try to move from top
-                        } else if (state.layout[ROW_RM_BTM][i] != EMPTY) {
+                            move_t move = { HALL_TO_ROOM, h, ROW_RM_TOP, i };
+                            int dist = path_move(move, current);
+                            if (dist > 0) {
+                                burrow_t new_state = execute_move(move, current, dist);
+                                queue_add(&pq, new_state);
+                            }
+                        } else if (current.layout[ROW_RM_BTM][i] != EMPTY) {
                             // try to move from bottom
+                            move_t move = { HALL_TO_ROOM, h, ROW_RM_BTM, i };
+                            int dist = path_move(move, current);
+                            if (dist > 0) {
+                                burrow_t new_state = execute_move(move, current, dist);
+                                queue_add(&pq, new_state);
+                            }
                         }
                     }
                 }
@@ -203,27 +236,71 @@ int main() {
 
     burrow_t state = parse_input(input);
     fclose(input);
-    print_burrow(&state);
 
+    int dist = organize_burrow(state);
+    printf("Energy: %d\n", dist);
+    
+    // testing pathing and moving
+    // burrow_t new_state;
+    // move_t rth = { ROOM_TO_HALL, 5, ROW_RM_TOP, COL_ROOM_A };
+    // int dist = path_move(rth, state);
+    // if (dist > 0) {
+    //     printf("MOVE: top room A to hall 5\n");
+    //     new_state = execute_move(rth, state, dist);
+    //     state = new_state;
+    // } else {
+    //     printf("Unable to move!\n");
+    // }
+    // print_burrow(&state);
+    // printf("energy spent thus far: %d\n", state.energy);
 
-    // pathing tests
-    int test_dist;
-    for (int h = 0; h < NCOL; h++) {
-        if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
-            continue;
-        }
-        for (int r = COL_ROOM_A; r <= COL_ROOM_D; r += 2) {
-            for (int s = ROW_RM_TOP; s <= ROW_RM_BTM; s++) {
-                // move_t test_move = { ROOM_TO_HALL, (s * 10) + r, h };
-                // test_dist = path_move(test_move, state);
-                // printf("Moving from the %s of room %d to hallway spot %d: %d\n", s == 1 ? "top" : "bottom",  (r / 2) - 1, h, test_dist);
+    // rth.hall = 9;
+    // rth.room_row = ROW_RM_TOP;
+    // rth.room_col = COL_ROOM_B;
+    // dist = path_move(rth, state);
+    // if (dist > 0) {
+    //     printf("MOVE: top room B to hall 9\n");
+    //     new_state = execute_move(rth, state, dist);
+    //     state = new_state;
+    // } else {
+    //     printf("Unable to move!\n");
+    // }
+    // print_burrow(&state);
+    // printf("energy spent thus far: %d\n", state.energy);
 
-                move_t test_move = { HALL_TO_ROOM, h, (s * 10) + r };
-                test_dist = path_move(test_move, state);
-                printf("Moving from hallway spot %d to the %s of room %d: %d\n", h, s == 1 ? "top" : "bottom", (r / 2) - 1, test_dist);
-            }
-        }
-    }
+    // rth.hall = 0;
+    // rth.room_row = ROW_RM_TOP;
+    // rth.room_col = COL_ROOM_B;
+    // dist = path_move(rth, state);
+    // if (dist > 0) {
+    //     printf("MOVE: top room B to hall 0\n");
+    //     new_state = execute_move(rth, state, dist);
+    //     state = new_state;
+    // } else {
+    //     printf("Unable to move!\n");
+    // }
+    // print_burrow(&state);
+    // printf("energy spent thus far: %d\n", state.energy);
+
+    // printf("modifying state\n");
+    // state.layout[ROW_RM_BTM][COL_ROOM_B] = BRONZE;
+    // state.layout[ROW_RM_TOP][COL_ROOM_C] = DESERT;
+    // print_burrow(&state);
+    // printf("energy spent thus far: %d\n", state.energy);
+
+    // move_t htr = { HALL_TO_ROOM, 5, ROW_RM_TOP, COL_ROOM_B };
+    // dist = path_move(rth, state);
+    // if (dist > 0) {
+    //     printf("MOVE: hall 5 to top room B\n");
+    //     new_state = execute_move(htr, state, dist);
+    //     state = new_state;
+    // } else {
+    //     printf("Unable to move!\n");
+    // }
+    // print_burrow(&state);
+    // printf("energy spent thus far: %d\n", state.energy);
+
+    // printf("total energy expended: %d\n", state.energy);
 
     return EXIT_SUCCESS;
 }

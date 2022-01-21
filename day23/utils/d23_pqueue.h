@@ -56,6 +56,7 @@ void queue_add(burrow_queue_t *q, burrow_t add) {
         q->items[i] = add;
 
         q->tail = (q->tail + 1) % (int)q->capacity;
+        q->size++;
     }
 }
 
@@ -87,6 +88,7 @@ int queue_remove(burrow_queue_t *q, burrow_t *dst) {
         }
 
         *dst = tmp;
+        q->size--;
         return 1;
     }
 }
@@ -99,11 +101,13 @@ void print_queue(burrow_queue_t *q) {
         burrow_t b;
         while (i != q->tail) {
             b = q->items[i];
-            printf("%d\n", b.energy);
+            // printf("%d\n", b.energy);
+            print_burrow(&b);
             i = (i + 1) % (int)q->capacity;
         }
 
         b = q->items[i];
-        printf("%d\n", b.energy);
+        // printf("%d\n", b.energy);
+        print_burrow(&b);
     }
 }

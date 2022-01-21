@@ -34,17 +34,44 @@ struct burrow {
 
 struct move {
     int move_type;
-    int from;
-    int to;
+    int hall;
+    int room_row;
+    int room_col;
 };
 
-type_t get_room_type(int room_num) {
+type_t get_room_type_from_num(int room_num) {
     type_t rooms[4] = { AMBER, BRONZE, COPPER, DESERT };
-    if (room_num < 0 || room_num > 4) {
+    if (room_num < 0 || room_num >= 4) {
         return UNKNOWN;
     } else {
         return rooms[room_num];
     }
+}
+
+type_t get_room_type_from_col(int room_col) {
+    int num = (room_col / 2) - 1;
+    if (2 * (num + 1) == room_col) {
+        return get_room_type_from_num(num);
+    } else {
+        return UNKNOWN;
+    }
+}
+
+burrow_t get_finished_burrow(void) {
+    burrow_t b;
+    b.energy = -1;
+
+    for (int i = 0; i < NCOL; i++) {
+        b.layout[ROW_HALL][i] = EMPTY;
+    }
+
+    for (int r = ROW_RM_TOP; r <= ROW_RM_BTM; r++) {
+        for (int c = 0; c < NCOL; c++) {
+            b.layout[r][c] = get_room_type_from_col(c);
+        }
+    }
+
+    return b;
 }
 
 type_t char_to_type(char c) {
