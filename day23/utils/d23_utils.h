@@ -57,7 +57,7 @@ type_t get_room_type_from_col(int room_col) {
     }
 }
 
-int get_room_from_type(type_t type) {
+int get_room_num_from_type(type_t type) {
     switch (type) {
         case AMBER:
             return 0;
@@ -67,6 +67,21 @@ int get_room_from_type(type_t type) {
             return 2;
         case DESERT:
             return 3;
+    }
+
+    return -1;
+}
+
+int get_room_col_from_type(type_t type) {
+        switch (type) {
+        case AMBER:
+            return COL_ROOM_A;
+        case BRONZE:
+            return COL_ROOM_B;
+        case COPPER:
+            return COL_ROOM_C;
+        case DESERT:
+            return COL_ROOM_D;
     }
 
     return -1;

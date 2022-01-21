@@ -40,6 +40,11 @@ int room_is_eligible(int from, int room_num, burrow_t state) {
     return 0;
 }
 
+int room_is_finished(int room_col, burrow_t state) {
+    return state.layout[ROW_RM_TOP][room_col] == state.layout[ROW_RM_BTM][room_col] &&
+        state.layout[ROW_RM_TOP][room_col] == get_room_type_from_col(room_col);
+}
+
 burrow_t execute_move(move_t move, burrow_t state, int dist) {
 
     burrow_t new_state = state;
@@ -134,13 +139,47 @@ int organize_burrow(burrow_t state) {
             }
 
             // check for hall to room movements
+            int to_room = 0;
             for (int h = 0; h < NCOL; h++) {
                 if (current.layout[ROW_HALL][h] != EMPTY) {
 
+                    int room_col = get_room_col_from_type(current.layout[ROW_HALL][h]);
+                    if (current.layout[ROW_RM_TOP][room_col] == EMPTY && current.layout[ROW_RM_BTM][room_col] == EMPTY) {
+                        // move to bottom
+                        move_t move = { HALL_TO_ROOM, h, ROW_RM_BTM, room_col };
+                        int dist = path_move(move, current);
+                        if (dist > 0) {
+                            burrow_t new_state = execute_move(move, current, dist);
+                            queue_add(&pq, new_state);
+                            to_room = 1;
+                        }
+                    } else if (current.layout[ROW_RM_TOP][room_col] == EMPTY && current.layout[ROW_RM_BTM][room_col] == current.layout[ROW_HALL][h]) {
+                        // move to top
+                        move_t move = { HALL_TO_ROOM, h, ROW_RM_TOP, room_col };
+                        int dist = path_move(move, current);
+                        if (dist > 0) {
+                            burrow_t new_state = execute_move(move, current, dist);
+                            queue_add(&pq, new_state);
+                            to_room = 1;
+                        }
+                    }
                 }
             }
 
             // if no h-t-r, then try r-t-h
+            if (!to_room) {
+                for (int col = COL_ROOM_A; col <= COL_ROOM_D; col += 2) {
+                    if (!room_is_finished(col, current) && current.layout[ROW_RM_BTM][col] != EMPTY) {
+                        for (int h = 0; h < NCOL; h++) {
+                            if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
+                                continue;
+                            }
+
+                            
+                        }
+                    }
+                }
+            }
         }
 
         // old block
