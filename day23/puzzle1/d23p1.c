@@ -124,6 +124,26 @@ int organize_burrow(burrow_t state) {
             break;
         }
 
+        // refactored block
+        if (!is_visited(visited, visit_num, current)) {
+
+            visited[visit_num++] = current;
+            if (visit_num >= visit_cap) {
+                visit_cap *= 2;
+                visited = (burrow_t *)realloc(visited, visit_cap * sizeof(burrow_t));
+            }
+
+            // check for hall to room movements
+            for (int h = 0; h < NCOL; h++) {
+                if (current.layout[ROW_HALL][h] != EMPTY) {
+
+                }
+            }
+
+            // if no h-t-r, then try r-t-h
+        }
+
+        // old block
         // possible optimization: add all possible hall-to-room moves to queue.
         // if at least1 is added, don't bother with room-to-hall
         if (!is_visited(visited, visit_num, current)) {

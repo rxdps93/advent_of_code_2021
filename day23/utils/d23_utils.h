@@ -57,6 +57,21 @@ type_t get_room_type_from_col(int room_col) {
     }
 }
 
+int get_room_from_type(type_t type) {
+    switch (type) {
+        case AMBER:
+            return 0;
+        case BRONZE:
+            return 1;
+        case COPPER:
+            return 2;
+        case DESERT:
+            return 3;
+    }
+
+    return -1;
+}
+
 burrow_t get_finished_burrow(void) {
     burrow_t b;
     b.energy = -1;
