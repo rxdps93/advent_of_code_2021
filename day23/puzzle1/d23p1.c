@@ -122,7 +122,7 @@ int organize_burrow(burrow_t state) {
         burrow_t current;
         queue_remove(&pq, &current);
 
-        print_burrow(&current);
+        // print_burrow(&current);
 
         if (is_organized(&current)) {
             energy = current.energy;
@@ -175,7 +175,23 @@ int organize_burrow(burrow_t state) {
                                 continue;
                             }
 
-                            
+                            if (current.layout[ROW_RM_TOP][col] != EMPTY) {
+                                // move from top
+                                move_t move = { ROOM_TO_HALL, h, ROW_RM_TOP, col };
+                                int dist = path_move(move, current);
+                                if (dist > 0) {
+                                    burrow_t new_state = execute_move(move, current, dist);
+                                    queue_add(&pq, new_state);
+                                }
+                            } else if (current.layout[ROW_RM_BTM][col] != get_room_type_from_col(col)) {
+                                // move from bottom
+                                move_t move = { ROOM_TO_HALL, h, ROW_RM_BTM, col };
+                                int dist = path_move(move, current);
+                                if (dist > 0) {
+                                    burrow_t new_state = execute_move(move, current, dist);
+                                    queue_add(&pq, new_state);
+                                }
+                            }
                         }
                     }
                 }
@@ -185,77 +201,77 @@ int organize_burrow(burrow_t state) {
         // old block
         // possible optimization: add all possible hall-to-room moves to queue.
         // if at least1 is added, don't bother with room-to-hall
-        if (!is_visited(visited, visit_num, current)) {
+        // if (!is_visited(visited, visit_num, current)) {
 
-            visited[visit_num++] = current;
-            if (visit_num >= visit_cap) {
-                visit_cap *= 2;
-                visited = (burrow_t *)realloc(visited, visit_cap * sizeof(burrow_t));
-            }
-            // find all possible moves for the current state
-            for (int h = 0; h < NCOL; h++) {
-                if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
-                    continue;
-                }
+        //     visited[visit_num++] = current;
+        //     if (visit_num >= visit_cap) {
+        //         visit_cap *= 2;
+        //         visited = (burrow_t *)realloc(visited, visit_cap * sizeof(burrow_t));
+        //     }
+        //     // find all possible moves for the current state
+        //     for (int h = 0; h < NCOL; h++) {
+        //         if (h == COL_ROOM_A || h == COL_ROOM_B || h == COL_ROOM_C || h == COL_ROOM_D) {
+        //             continue;
+        //         }
 
-                if (current.layout[ROW_HALL][h] == EMPTY) {
-                    // see what we can move to this space from a room
-                    for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
-                        // check if room is finished
-                        if ((current.layout[ROW_RM_TOP][i] == current.layout[ROW_RM_BTM][i]) && (current.layout[ROW_RM_TOP][i] == get_room_type_from_num((i / 2) - 1))) {
-                            continue;
-                        }
+        //         if (current.layout[ROW_HALL][h] == EMPTY) {
+        //             // see what we can move to this space from a room
+        //             for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
+        //                 // check if room is finished
+        //                 if ((current.layout[ROW_RM_TOP][i] == current.layout[ROW_RM_BTM][i]) && (current.layout[ROW_RM_TOP][i] == get_room_type_from_num((i / 2) - 1))) {
+        //                     continue;
+        //                 }
 
-                        if (current.layout[ROW_RM_TOP][i] != EMPTY) {
-                            // try to move from top
-                            move_t move = { ROOM_TO_HALL, h, ROW_RM_TOP, i };
-                            int dist = path_move(move, current);
-                            if (dist > 0) {
-                                burrow_t new_state = execute_move(move, current, dist);
-                                queue_add(&pq, new_state);
-                            }
-                        } else if (current.layout[ROW_RM_BTM][i] != EMPTY && current.layout[ROW_RM_BTM][i] != get_room_type_from_num((i / 2) - 1)) {
-                            // try to move from bottom
-                            move_t move = { ROOM_TO_HALL, h, ROW_RM_BTM, i };
-                            int dist = path_move(move, current);
-                            if (dist > 0) {
-                                burrow_t new_state = execute_move(move, current, dist);
-                                queue_add(&pq, new_state);
-                            }
-                        }
-                    }
-                } else {
-                    // see what we can move from this space to a room
-                    for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
-                        // check if room is eligible
-                        // eligible if room type matches amphipod type
-                        // plus the room is either fully empty OR
-                        // the top spot is empty with the bottom filled by a matching type
-                        if (!room_is_eligible(h, (i / 2) - 1, current)) {
-                            continue;
-                        }
+        //                 if (current.layout[ROW_RM_TOP][i] != EMPTY) {
+        //                     // try to move from top
+        //                     move_t move = { ROOM_TO_HALL, h, ROW_RM_TOP, i };
+        //                     int dist = path_move(move, current);
+        //                     if (dist > 0) {
+        //                         burrow_t new_state = execute_move(move, current, dist);
+        //                         queue_add(&pq, new_state);
+        //                     }
+        //                 } else if (current.layout[ROW_RM_BTM][i] != EMPTY && current.layout[ROW_RM_BTM][i] != get_room_type_from_num((i / 2) - 1)) {
+        //                     // try to move from bottom
+        //                     move_t move = { ROOM_TO_HALL, h, ROW_RM_BTM, i };
+        //                     int dist = path_move(move, current);
+        //                     if (dist > 0) {
+        //                         burrow_t new_state = execute_move(move, current, dist);
+        //                         queue_add(&pq, new_state);
+        //                     }
+        //                 }
+        //             }
+        //         } else {
+        //             // see what we can move from this space to a room
+        //             for (int i = COL_ROOM_A; i <= COL_ROOM_D; i += 2) {
+        //                 // check if room is eligible
+        //                 // eligible if room type matches amphipod type
+        //                 // plus the room is either fully empty OR
+        //                 // the top spot is empty with the bottom filled by a matching type
+        //                 if (!room_is_eligible(h, (i / 2) - 1, current)) {
+        //                     continue;
+        //                 }
 
-                        if (current.layout[ROW_RM_TOP][i] != EMPTY) {
-                            // try to move from top
-                            move_t move = { HALL_TO_ROOM, h, ROW_RM_TOP, i };
-                            int dist = path_move(move, current);
-                            if (dist > 0) {
-                                burrow_t new_state = execute_move(move, current, dist);
-                                queue_add(&pq, new_state);
-                            }
-                        } else if (current.layout[ROW_RM_BTM][i] != EMPTY) {
-                            // try to move from bottom
-                            move_t move = { HALL_TO_ROOM, h, ROW_RM_BTM, i };
-                            int dist = path_move(move, current);
-                            if (dist > 0) {
-                                burrow_t new_state = execute_move(move, current, dist);
-                                queue_add(&pq, new_state);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        //                 if (current.layout[ROW_RM_TOP][i] != EMPTY) {
+        //                     // try to move from top
+        //                     move_t move = { HALL_TO_ROOM, h, ROW_RM_TOP, i };
+        //                     int dist = path_move(move, current);
+        //                     if (dist > 0) {
+        //                         burrow_t new_state = execute_move(move, current, dist);
+        //                         queue_add(&pq, new_state);
+        //                     }
+        //                 } else if (current.layout[ROW_RM_BTM][i] != EMPTY) {
+        //                     // try to move from bottom
+        //                     move_t move = { HALL_TO_ROOM, h, ROW_RM_BTM, i };
+        //                     int dist = path_move(move, current);
+        //                     if (dist > 0) {
+        //                         burrow_t new_state = execute_move(move, current, dist);
+        //                         queue_add(&pq, new_state);
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     free(visited);

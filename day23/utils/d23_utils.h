@@ -67,9 +67,9 @@ int get_room_num_from_type(type_t type) {
             return 2;
         case DESERT:
             return 3;
+        default:
+            return -1;
     }
-
-    return -1;
 }
 
 int get_room_col_from_type(type_t type) {
@@ -82,9 +82,9 @@ int get_room_col_from_type(type_t type) {
             return COL_ROOM_C;
         case DESERT:
             return COL_ROOM_D;
+        default:
+            return -1;
     }
-
-    return -1;
 }
 
 burrow_t get_finished_burrow(void) {
